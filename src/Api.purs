@@ -1,19 +1,16 @@
 module Api where
 
 import Prelude
-import Effect (Effect)
-import Effect.Aff (Aff)
-import Effect.Class.Console (log)
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
 import Affjax.Node as AX
 import Affjax.ResponseFormat as ResponseFormat
-import Data.Argonaut.Core (Json)
-import Data.Argonaut.Core as JSON
-import Data.Argonaut.Decode (decodeJson)
-import Foreign.Object (Object)
-import Foreign.Object as Object
 import Data.Array (sort)
+import Data.Bifunctor (lmap)
+import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
+import Data.Argonaut.Core as JSON
+import Effect.Aff (Aff)
+import Effect.Class.Console (log)
+import Foreign.Object as Object
 
 -- Define the URL for the dog API
 baseUrl :: String
@@ -23,9 +20,9 @@ baseUrl = "https://dog.ceo/api"
 fetchDogBreeds :: Aff (Either String (Array String))
 fetchDogBreeds = do
   log $ "Sending request to " <> baseUrl <> "/breeds/list/all"
-  response <- AX.get ResponseFormat.json (baseUrl <> "/breeds/list/all")
+  response <- map (lmap AX.printError) (AX.get ResponseFormat.json (baseUrl <> "/breeds/list/all"))
   case response of
-    Left err -> pure $ Left $ "Error fetching dog breeds: " <> AX.printError err
+    Left err -> pure $ Left $ "Error fetching dog breeds: " <> err
     Right res -> do
       log $ "Response received successfully"
 
@@ -38,7 +35,9 @@ fetchDogBreeds = do
         Just msgJson ->
           case JSON.toObject msgJson of
             Nothing -> pure $ Left "'message' field is not an object"
-            Just breedObj -> pure $ Right $ sort $ Object.keys breedObj
+            Just breedObj -> do
+              log $ "msgJson: " <> JSON.stringify msgJson
+              pure $ Right $ sort $ Object.keys breedObj
 
 -- Function to fetch images for a specific breed
 fetchBreedImages :: String -> Aff (Either String (Array String))

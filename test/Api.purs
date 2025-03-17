@@ -1,9 +1,8 @@
 module Test.Api where
 
 import Prelude
-import Effect (Effect)
 import Effect.Class.Console (log)
-import Effect.Aff (Aff, launchAff_)
+import Effect.Aff (Aff)
 import Data.Either (Either(..))
 import Data.Array (length, take)
 import Api (fetchDogBreeds, fetchBreedImages)
