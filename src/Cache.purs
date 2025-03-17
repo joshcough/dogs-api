@@ -18,7 +18,7 @@ type Cache =
   , images :: Map.Map Breed (Array String)
   }
 
-data CacheResult a = CacheHit a | CacheMiss a
+data CacheResult a = Hit a | Miss a
 
 -- Initialize an empty cache
 initCache :: Aff (Ref Cache)
@@ -41,7 +41,7 @@ fetchBreedImagesWithCache breed =
     (fetchBreedImages breed)
 
 -- A function for working with the cache.
-fetchWithCache :: forall a .
+fetchWithCache :: forall a . Show a =>
   (Cache -> Maybe a) ->
   (a -> Cache -> Cache) ->
   Aff (Either String a) ->
@@ -51,7 +51,7 @@ fetchWithCache readCache writeCache fetchNewData cacheRef = do
   cache <- liftEffect $ Ref.read cacheRef
   case readCache cache of
     -- if the value is already in the cache, just return it
-    Just a -> pure (Right (CacheHit a))
+    Just a -> pure (Right (Hit a))
     Nothing -> do
       -- if not, go fetch it (which might result in an error)
       result <- fetchNewData
@@ -59,9 +59,9 @@ fetchWithCache readCache writeCache fetchNewData cacheRef = do
         -- if we get a result back, write it into the cache, and return the result
         Right res -> do
           liftEffect (Ref.modify_ (writeCache res) cacheRef)
-          cache <- liftEffect $ Ref.read cacheRef
-          liftEffect $ log "writing data into cache"
+          liftEffect $ log $ "writing data into cache" <> show res
+          -- cache <- liftEffect $ Ref.read cacheRef
           -- liftEffect $ log $ show cache
-          pure (Right (CacheMiss res))
+          pure (Right (Miss res))
         -- if we get an error, just return the error
         Left err -> pure $ Left (err)

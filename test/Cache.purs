@@ -20,12 +20,12 @@ testFetchDogBreedsWithCache = do
   result2 <- fetchDogBreedsWithCache cache
   case result1 of
     Left err -> liftEffect $ Assert.assert' err false
-    Right (CacheMiss _) -> liftEffect $ Assert.assert true
-    Right (CacheHit _) -> liftEffect $ Assert.assert' "Expected a cache miss, but got a hit" false
+    Right (Miss _) -> liftEffect $ Assert.assert true
+    Right (Hit _) -> liftEffect $ Assert.assert' "Expected a cache miss, but got a hit" false
   case result2 of
     Left err -> liftEffect $ Assert.assert' err false
-    Right (CacheHit _) -> liftEffect $ Assert.assert true
-    Right (CacheMiss _) -> liftEffect $ Assert.assert' "Expected a cache hit, but got a miss" false
+    Right (Hit _) -> liftEffect $ Assert.assert true
+    Right (Miss _) -> liftEffect $ Assert.assert' "Expected a cache hit, but got a miss" false
   log "✓ testFetchDogBreedsWithCache test passed"
 
 ---- Test for fetching breed images
@@ -40,14 +40,14 @@ testFetchBreedImagesWithCache = do
   result3 <- fetchBreedImagesWithCache bostonBulldog cache
   case result1 of
     Left err -> liftEffect $ Assert.assert' err false
-    Right (CacheMiss _) -> liftEffect $ Assert.assert true
-    Right (CacheHit _) -> liftEffect $ Assert.assert' "Expected a cache miss, but got a hit" false
+    Right (Miss _) -> liftEffect $ Assert.assert true
+    Right (Hit _) -> liftEffect $ Assert.assert' "Expected a cache miss, but got a hit" false
   case result2 of
     Left err -> liftEffect $ Assert.assert' err false
-    Right (CacheHit _) -> liftEffect $ Assert.assert true
-    Right (CacheMiss _) -> liftEffect $ Assert.assert' "Expected a cache hit, but got a miss" false
+    Right (Hit _) -> liftEffect $ Assert.assert true
+    Right (Miss _) -> liftEffect $ Assert.assert' "Expected a cache hit, but got a miss" false
   case result3 of
     Left err -> liftEffect $ Assert.assert' err false
-    Right (CacheMiss _) -> liftEffect $ Assert.assert true
-    Right (CacheHit _) -> liftEffect $ Assert.assert' "Expected a cache miss, but got a hit" false
+    Right (Miss _) -> liftEffect $ Assert.assert true
+    Right (Hit _) -> liftEffect $ Assert.assert' "Expected a cache miss, but got a hit" false
   log "✓ testFetchBreedImagesWithCache test passed"
