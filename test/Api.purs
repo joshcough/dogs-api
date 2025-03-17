@@ -5,7 +5,7 @@ import Effect.Class.Console (log)
 import Effect.Aff (Aff)
 import Data.Either (Either(..))
 import Data.Array (length, take)
-import Api (fetchDogBreeds, fetchBreedImages)
+import Api (BreedImageReq, fetchDogBreeds, fetchBreedImages)
 
 -- Test for fetching dog breeds
 testFetchDogBreeds :: Aff Unit
@@ -20,13 +20,13 @@ testFetchDogBreeds = do
       log $ "First few breeds: " <> show (take 5 breeds)
 
 -- Test for fetching breed images
-testFetchBreedImages :: String -> Aff Unit
+testFetchBreedImages :: BreedImageReq -> Aff Unit
 testFetchBreedImages breed = do
-  log $ "Fetching images for breed: " <> breed
+  log $ "Fetching images for breed: " <> show breed
   result <- fetchBreedImages breed
   case result of
     Left err -> log $ "Test failed: " <> err
     Right images -> do
       log $ "Response received: " <> show result
-      log $ "Successfully fetched " <> show (length images) <> " images for " <> breed
+      log $ "Successfully fetched " <> show (length images) <> " images for " <> show breed
       log $ "First few images: " <> show (take 3 images)

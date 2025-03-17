@@ -1,6 +1,7 @@
 module Test.Main where
 
 import Prelude
+import Data.Maybe(Maybe(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class.Console (log)
@@ -10,5 +11,6 @@ main :: Effect Unit
 main = launchAff_ do
   log "Running API tests..."
   testFetchDogBreeds
-  log "\nTesting fetchBreedImages for 'hound'..."
-  testFetchBreedImages "hound"
+  log "\nTesting fetchBreedImages..."
+  testFetchBreedImages { name: "bulldog", subBreed: Just "french" }
+  testFetchBreedImages { name: "dachshund", subBreed: Nothing }
