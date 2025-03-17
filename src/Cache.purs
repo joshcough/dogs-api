@@ -6,6 +6,7 @@ import Api (BreedFamily, Breed, fetchDogBreeds, fetchBreedImages)
 import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
@@ -22,7 +23,10 @@ data CacheResult a = Hit a | Miss a
 
 -- Initialize an empty cache
 initCache :: Aff (Ref Cache)
-initCache = liftEffect $ Ref.new { breeds: Nothing, images: Map.empty }
+initCache = liftEffect initCacheEff
+
+initCacheEff :: Effect (Ref Cache)
+initCacheEff = Ref.new { breeds: Nothing, images: Map.empty }
 
 -- Fetch dog breeds with caching
 fetchDogBreedsWithCache :: Ref Cache -> Aff (Either String (CacheResult (Array BreedFamily)))

@@ -2,26 +2,31 @@ module Components.BreedList where
 
 import Prelude
 
-import Api (BreedFamily, fetchDogBreeds)
+import Api (BreedFamily)
+import Cache (Cache, CacheResult(..), fetchDogBreedsWithCache)
 import Data.Array (length)
 import Data.Either (Either(..))
 import Data.Traversable (for_)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Ref (Ref)
 import Web.DOM.Document (Document, createElement)
 import Web.DOM.Element (Element, toNode)
 import Web.DOM.Node (appendChild, setTextContent, removeChild)
 
+type OnBreedSelectFn = String -> Effect Unit
+
 -- Create a component to display a single breed family
-createBreedElement :: Document -> BreedFamily -> Effect Element
-createBreedElement doc breedFamily = do
+createBreedElement :: Document -> BreedFamily -> OnBreedSelectFn -> Effect Element
+createBreedElement doc breedFamily onBreedSelect = do
   -- Create container for the breed family
   container <- createElement "div" doc
 
-  -- Add breed name as heading
+  -- Add breed name as heading (make it clickable)
   nameHeading <- createElement "h3" doc
   setTextContent breedFamily.name (toNode nameHeading)
+  makeClickable nameHeading breedFamily.name doc onBreedSelect
   _ <- appendChild (toNode nameHeading) (toNode container)
 
   -- If there are sub-breeds, display them in a list
@@ -38,6 +43,9 @@ createBreedElement doc breedFamily = do
       for_ breedFamily.subBreeds \subBreed -> do
         item <- createElement "li" doc
         setTextContent subBreed (toNode item)
+        -- Make sub-breed clickable with proper naming (breed/subbreed)
+        let fullBreedName = breedFamily.name <> "/" <> subBreed
+        makeClickable item fullBreedName doc onBreedSelect
         _ <- appendChild (toNode item) (toNode list)
         pure unit
 
@@ -48,8 +56,11 @@ createBreedElement doc breedFamily = do
   pure container
 
 -- Create a component to render all breeds
-renderBreedList :: Document -> Element -> Effect Unit
-renderBreedList doc container = do
+renderBreedList :: Document -> Element -> Ref Cache -> OnBreedSelectFn -> Effect Unit
+renderBreedList doc container cacheRef onBreedSelect = do
+  -- Clear container first
+  clearContainer container
+
   -- Create a loading message
   loadingMsg <- createElement "p" doc
   setTextContent "Loading dog breeds..." (toNode loadingMsg)
@@ -57,7 +68,7 @@ renderBreedList doc container = do
 
   -- Fetch the data and render it
   launchAff_ do
-    result <- fetchDogBreeds
+    result <- fetchDogBreedsWithCache cacheRef
 
     liftEffect do
       -- Remove loading message
@@ -71,20 +82,32 @@ renderBreedList doc container = do
           _ <- appendChild (toNode errorMsg) (toNode container)
           pure unit
 
-        Right breedFamilies -> do
-          -- Create a heading
-          heading <- createElement "h2" doc
-          setTextContent "Dog Breeds" (toNode heading)
-          _ <- appendChild (toNode heading) (toNode container)
+        Right (Hit breedFamilies) -> do
+          displayBreedList doc container breedFamilies onBreedSelect
 
-          -- Create a container for the breeds list
-          breedsContainer <- createElement "div" doc
+        Right (Miss breedFamilies) -> do
+          displayBreedList doc container breedFamilies onBreedSelect
 
-          -- Create and add each breed element
-          for_ breedFamilies \breedFamily -> do
-            breedElement <- createBreedElement doc breedFamily
-            _ <- appendChild (toNode breedElement) (toNode breedsContainer)
-            pure unit
+-- Helper function to display the breed list once data is loaded
+displayBreedList :: Document -> Element -> Array BreedFamily -> OnBreedSelectFn -> Effect Unit
+displayBreedList doc container breedFamilies onBreedSelect = do
+  -- Create a heading
+  heading <- createElement "h2" doc
+  setTextContent "Dog Breeds" (toNode heading)
+  _ <- appendChild (toNode heading) (toNode container)
 
-          _ <- appendChild (toNode breedsContainer) (toNode container)
-          pure unit
+  -- Create a container for the breeds list
+  breedsContainer <- createElement "div" doc
+
+  -- Create and add each breed element
+  for_ breedFamilies \breedFamily -> do
+    breedElement <- createBreedElement doc breedFamily onBreedSelect
+    _ <- appendChild (toNode breedElement) (toNode breedsContainer)
+    pure unit
+
+  _ <- appendChild (toNode breedsContainer) (toNode container)
+  pure unit
+
+-- Helper functions
+foreign import makeClickable :: Element -> String -> Document -> OnBreedSelectFn -> Effect Unit
+foreign import clearContainer :: Element -> Effect Unit
