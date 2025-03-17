@@ -13,11 +13,10 @@ import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
 import Foreign.Object as Object
 
--- Define the URL for the dog API
 baseUrl :: String
 baseUrl = "https://dog.ceo/api"
 
-type Breed = { name :: String, subBreeds :: Array String }
+type BreedFamily = { name :: String, subBreeds :: Array String }
 
 -- Parse sub-breeds from a JSON value
 parseSubBreeds :: JSON.Json -> Either String (Array String)
@@ -26,7 +25,7 @@ parseSubBreeds json = do
   pure $ map (\j -> maybe "" identity (JSON.toString j)) arr
 
 -- Function to fetch all breeds with their sub-breeds
-fetchDogBreeds :: Aff (Either String (Array Breed))
+fetchDogBreeds :: Aff (Either String (Array BreedFamily))
 fetchDogBreeds = dogsApiRequest "/breeds/list/all" $ \res -> do
   breedObj <- jsonObject res
   let breedEntries = Object.toUnfoldable breedObj :: Array (Tuple String JSON.Json)
@@ -35,13 +34,23 @@ fetchDogBreeds = dogsApiRequest "/breeds/list/all" $ \res -> do
         pure { name, subBreeds }) breedEntries
   sequence breeds
 
-type BreedImageReq = { name :: String, subBreed :: Maybe String }
+newtype Breed = Breed { name :: String, subBreed :: Maybe String }
+
+derive instance Eq Breed
+derive instance Ord Breed
+
+instance Show Breed where
+  show (Breed { name, subBreed }) =
+    "Breed " <> show { name, subBreed }
+
+mkBreedImageReq :: String -> Maybe String -> Breed
+mkBreedImageReq name subBreed = Breed { name, subBreed }
 
 -- Function to fetch images for a specific breed
-fetchBreedImages :: BreedImageReq -> Aff (Either String (Array String))
-fetchBreedImages breedImageReq = do
-  let subBreedName = maybe "" (\s -> "/" <> s) breedImageReq.subBreed
-  let path = "/breed/" <> breedImageReq.name <> subBreedName <> "/images"
+fetchBreedImages :: Breed -> Aff (Either String (Array String))
+fetchBreedImages (Breed { name, subBreed }) = do
+  let subBreedName = maybe "" (\s -> "/" <> s) subBreed
+  let path = "/breed/" <> name <> subBreedName <> "/images"
   dogsApiRequest path $ \res -> jsonArray res >>= traverse jsonString
 
 -- Construct a request to the dogs api service with the given path

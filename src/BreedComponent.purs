@@ -2,7 +2,7 @@ module BreedComponent where
 
 import Prelude
 
-import Api (Breed, fetchDogBreeds)
+import Api (BreedFamily, fetchDogBreeds)
 import Data.Array (length)
 import Data.Either (Either(..))
 import Data.Traversable (for_)
@@ -13,19 +13,19 @@ import Web.DOM.Document (Document, createElement)
 import Web.DOM.Element (Element, toNode)
 import Web.DOM.Node (appendChild, setTextContent, removeChild)
 
--- Create a component to display a single breed
-createBreedElement :: Document -> Breed -> Effect Element
-createBreedElement doc breed = do
-  -- Create container for the breed
+-- Create a component to display a single breed family
+createBreedElement :: Document -> BreedFamily -> Effect Element
+createBreedElement doc breedFamily = do
+  -- Create container for the breed family
   container <- createElement "div" doc
 
   -- Add breed name as heading
   nameHeading <- createElement "h3" doc
-  setTextContent breed.name (toNode nameHeading)
+  setTextContent breedFamily.name (toNode nameHeading)
   _ <- appendChild (toNode nameHeading) (toNode container)
 
   -- If there are sub-breeds, display them in a list
-  if length breed.subBreeds > 0
+  if length breedFamily.subBreeds > 0
     then do
       subBreedsHeading <- createElement "h4" doc
       setTextContent "Sub-breeds:" (toNode subBreedsHeading)
@@ -35,7 +35,7 @@ createBreedElement doc breed = do
       list <- createElement "ul" doc
 
       -- Add each sub-breed as a list item
-      for_ breed.subBreeds \subBreed -> do
+      for_ breedFamily.subBreeds \subBreed -> do
         item <- createElement "li" doc
         setTextContent subBreed (toNode item)
         _ <- appendChild (toNode item) (toNode list)
@@ -71,7 +71,7 @@ renderBreedList doc container = do
           _ <- appendChild (toNode errorMsg) (toNode container)
           pure unit
 
-        Right breeds -> do
+        Right breedFamilies -> do
           -- Create a heading
           heading <- createElement "h2" doc
           setTextContent "Dog Breeds" (toNode heading)
@@ -81,8 +81,8 @@ renderBreedList doc container = do
           breedsContainer <- createElement "div" doc
 
           -- Create and add each breed element
-          for_ breeds \breed -> do
-            breedElement <- createBreedElement doc breed
+          for_ breedFamilies \breedFamily -> do
+            breedElement <- createBreedElement doc breedFamily
             _ <- appendChild (toNode breedElement) (toNode breedsContainer)
             pure unit
 
