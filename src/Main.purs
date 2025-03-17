@@ -1,6 +1,7 @@
 module Main where
 
 import Prelude
+import Components.BreedList (renderBreedList)
 import Effect (Effect)
 import Effect.Console (error, log)
 import Data.Maybe (Maybe(..))
@@ -11,7 +12,6 @@ import Web.DOM.ParentNode (QuerySelector(..), querySelector)
 import Web.DOM.Document (toParentNode, createElement)
 import Web.DOM.Node (appendChild, setTextContent)
 import Web.DOM.Element (toNode)
-import BreedComponent (renderBreedList)
 
 main :: Effect Unit
 main = do

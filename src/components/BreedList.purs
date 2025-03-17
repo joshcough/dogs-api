@@ -1,4 +1,4 @@
-module BreedComponent where
+module Components.BreedList where
 
 import Prelude
 
