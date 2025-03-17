@@ -9,9 +9,11 @@
   , "console"
   , "effect"
   , "either"
+  , "foldable-traversable"
   , "foreign-object"
   , "maybe"
   , "prelude"
+  , "tuples"
   , "web-dom"
   , "web-html"
   ]
