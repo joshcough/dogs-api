@@ -60,8 +60,6 @@ fetchWithCache readCache writeCache fetchNewData cacheRef = do
         Right res -> do
           liftEffect (Ref.modify_ (writeCache res) cacheRef)
           liftEffect $ log $ "writing data into cache" <> show res
-          -- cache <- liftEffect $ Ref.read cacheRef
-          -- liftEffect $ log $ show cache
           pure (Right (Miss res))
         -- if we get an error, just return the error
         Left err -> pure $ Left (err)
