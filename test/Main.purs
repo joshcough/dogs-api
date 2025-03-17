@@ -5,8 +5,11 @@ import Prelude
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Test.Api (testFetchDogBreeds, testFetchBreedImages)
+import Test.Cache (testFetchDogBreedsWithCache, testFetchBreedImagesWithCache)
 
 main :: Effect Unit
 main = launchAff_ do
   testFetchDogBreeds
   testFetchBreedImages
+  testFetchDogBreedsWithCache
+  testFetchBreedImagesWithCache

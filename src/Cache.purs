@@ -1,4 +1,4 @@
-module ApiCache where
+module Cache where
 
 import Prelude
 
@@ -6,9 +6,9 @@ import Api (BreedFamily, Breed, fetchDogBreeds, fetchBreedImages)
 import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
-import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
+import Effect.Console (log)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
@@ -18,12 +18,14 @@ type Cache =
   , images :: Map.Map Breed (Array String)
   }
 
+data CacheResult a = CacheHit a | CacheMiss a
+
 -- Initialize an empty cache
-initCache :: Effect (Ref Cache)
-initCache = Ref.new { breeds: Nothing, images: Map.empty }
+initCache :: Aff (Ref Cache)
+initCache = liftEffect $ Ref.new { breeds: Nothing, images: Map.empty }
 
 -- Fetch dog breeds with caching
-fetchDogBreedsWithCache :: Ref Cache -> Aff (Either String (Array BreedFamily))
+fetchDogBreedsWithCache :: Ref Cache -> Aff (Either String (CacheResult (Array BreedFamily)))
 fetchDogBreedsWithCache =
   fetchWithCache
     (\c -> c.breeds)
@@ -31,7 +33,7 @@ fetchDogBreedsWithCache =
     fetchDogBreeds
 
 -- Fetch breed images with caching
-fetchBreedImagesWithCache :: Breed -> Ref Cache -> Aff (Either String (Array String))
+fetchBreedImagesWithCache :: Breed -> Ref Cache -> Aff (Either String (CacheResult (Array String)))
 fetchBreedImagesWithCache breed =
   fetchWithCache
     (\c -> Map.lookup breed c.images)
@@ -44,12 +46,12 @@ fetchWithCache :: forall a .
   (a -> Cache -> Cache) ->
   Aff (Either String a) ->
   Ref Cache ->
-  Aff (Either String a)
+  Aff (Either String (CacheResult a))
 fetchWithCache readCache writeCache fetchNewData cacheRef = do
   cache <- liftEffect $ Ref.read cacheRef
   case readCache cache of
     -- if the value is already in the cache, just return it
-    Just a -> pure (Right a)
+    Just a -> pure (Right (CacheHit a))
     Nothing -> do
       -- if not, go fetch it (which might result in an error)
       result <- fetchNewData
@@ -57,6 +59,9 @@ fetchWithCache readCache writeCache fetchNewData cacheRef = do
         -- if we get a result back, write it into the cache, and return the result
         Right res -> do
           liftEffect (Ref.modify_ (writeCache res) cacheRef)
-          pure (Right res)
+          cache <- liftEffect $ Ref.read cacheRef
+          liftEffect $ log "writing data into cache"
+          -- liftEffect $ log $ show cache
+          pure (Right (CacheMiss res))
         -- if we get an error, just return the error
         Left err -> pure $ Left (err)
