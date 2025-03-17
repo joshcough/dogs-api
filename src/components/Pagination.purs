@@ -2,13 +2,12 @@ module Components.Pagination where
 
 import Prelude
 
-import Data.Int (floor, ceil, toNumber)
+import Data.Int (ceil, toNumber)
 import Data.Array (slice)
 import Web.DOM.Document (Document, createElement)
 import Web.DOM.Element (Element, toNode)
 import Web.DOM.Node (appendChild, setTextContent)
 import Effect (Effect)
-import Effect.Class.Console (log)
 
 -- Type to represent pagination state with Int for all numeric values
 type PaginationState =
@@ -104,3 +103,4 @@ updatePaginationUI elements state = do
 -- Foreign imports (these would be defined in a separate .js file)
 foreign import setButtonDisabled :: Element -> Boolean -> Effect Unit
 foreign import addClickListener :: Element -> Effect Unit -> Effect Unit
+

@@ -2,8 +2,8 @@ module Components.BreedDetails where
 
 import Prelude
 
-import Api (Breed, fetchBreedImages)
-import Cache (Cache(..), CacheResult(..), fetchBreedImagesWithCache)
+import Api (Breed)
+import Cache (Cache, fetchBreedImagesWithCache, getCacheResultValue)
 import Components.Pagination as Pagination
 import Data.Array (length)
 import Data.Either (Either(..))
@@ -50,15 +50,12 @@ renderBreedDetails doc container breed cacheRef = do
           _ <- appendChild (toNode errorMsg) (toNode container)
           pure unit
 
-        Right (Hit images) -> do
-          displayBreedDetails doc container breed images backButton
-
-        Right (Miss images) -> do
-          displayBreedDetails doc container breed images backButton
+        Right cacheResult -> do
+          displayBreedDetails doc container breed (getCacheResultValue cacheResult)
 
 -- Helper function to display breed details once images are loaded
-displayBreedDetails :: Document -> Element -> Breed -> Array String -> Element -> Effect Unit
-displayBreedDetails doc container breed images backButton = do
+displayBreedDetails :: Document -> Element -> Breed -> Array String -> Effect Unit
+displayBreedDetails doc container breed images = do
   -- Create heading with breed name
   heading <- createElement "h2" doc
   setTextContent ("Details for " <> show breed) (toNode heading)

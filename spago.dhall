@@ -14,7 +14,6 @@
   , "foreign-object"
   , "integers"
   , "maybe"
-  , "numbers"
   , "ordered-collections"
   , "prelude"
   , "refs"

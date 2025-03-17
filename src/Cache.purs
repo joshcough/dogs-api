@@ -21,6 +21,10 @@ type Cache =
 
 data CacheResult a = Hit a | Miss a
 
+getCacheResultValue :: forall a . CacheResult a -> a
+getCacheResultValue (Hit a) = a
+getCacheResultValue (Miss a) = a
+
 -- Initialize an empty cache
 initCache :: Aff (Ref Cache)
 initCache = liftEffect initCacheEff
