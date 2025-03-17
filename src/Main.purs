@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 import Effect (Effect)
-import Effect.Console (log)
+import Effect.Console (error, log)
 import Data.Maybe (Maybe(..))
 import Web.HTML (window)
 import Web.HTML.Window (document)
@@ -15,32 +15,19 @@ import BreedComponent (renderBreedList)
 
 main :: Effect Unit
 main = do
-  w <- window
-  doc <- document w
-  let docAsDoc = toDocument doc
-  let parentNode = toParentNode docAsDoc
-
-  mContainer <- querySelector (QuerySelector "#app") parentNode
+  doc <- window >>= \w -> map toDocument (document w)
+  mContainer <- querySelector (QuerySelector "#app") (toParentNode doc)
   case mContainer of
-    Nothing -> log "Could not find app element"
+    Nothing -> error "Could not find app element"
     Just container -> do
-      -- Create heading element
-      heading <- createElement "h1" docAsDoc
-      setTextContent "Dog Breeds Explorer" (toNode heading)
-
-      -- Create intro paragraph
-      para <- createElement "p" docAsDoc
-      setTextContent "Browse all dog breeds and their sub-breeds below." (toNode para)
-
-      -- Create a container for the breeds
-      breedsContainer <- createElement "div" docAsDoc
-
-      -- Add elements to container
-      _ <- appendChild (toNode heading) (toNode container)
-      _ <- appendChild (toNode para) (toNode container)
-      _ <- appendChild (toNode breedsContainer) (toNode container)
-
-      -- Render the breeds list in the container
-      renderBreedList docAsDoc breedsContainer
-
+      heading <- map toNode (createElement "h1" doc)
+      setTextContent "Dog Breeds Explorer" heading
+      para <- map toNode (createElement "p" doc)
+      setTextContent "Browse all dog breeds and their sub-breeds below." para
+      breedsContainer <- createElement "div" doc
+      let containerNode = toNode container
+      _ <- appendChild heading containerNode
+      _ <- appendChild para containerNode
+      _ <- appendChild (toNode breedsContainer) containerNode
+      renderBreedList doc breedsContainer
       log "Application initialized"
