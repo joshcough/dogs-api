@@ -14,7 +14,8 @@ import Web.DOM.Document (Document, createElement)
 import Web.DOM.Element (Element, toNode)
 import Web.DOM.Node (appendChild, setTextContent, removeChild)
 
-type OnBreedSelectFn = String -> Effect Unit
+type OnBreedSelectFn
+  = String -> Effect Unit
 
 -- Create a component to display a single breed family
 createBreedElement :: Document -> BreedFamily -> OnBreedSelectFn -> Effect Element

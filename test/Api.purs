@@ -1,7 +1,6 @@
 module Test.Api where
 
 import Prelude
-
 import Api (BreedFamily, Breed(..), fetchDogBreeds, fetchBreedImages)
 import Data.Array (elem, length, null, all)
 import Data.Either (Either(..), isRight)
@@ -34,7 +33,8 @@ testFetchDogBreeds = do
 testFetchBreedImages :: Aff Unit
 testFetchBreedImages = do
   log "Testing fetchBreedImages..."
-  let bulldogReq = Breed { name: "bulldog", subBreed: Just "french" }
+  let
+    bulldogReq = Breed { name: "bulldog", subBreed: Just "french" }
   result <- fetchBreedImages bulldogReq
   liftEffect $ Assert.assert (isRight result)
   case result of
@@ -44,7 +44,8 @@ testFetchBreedImages = do
     Right images -> do
       liftEffect $ Assert.assert (not $ null images)
       liftEffect $ Assert.assert (length images >= 5)
-      let allValidUrls = all isValidImageUrl images
+      let
+        allValidUrls = all isValidImageUrl images
       liftEffect $ Assert.assert allValidUrls
       log "✓ fetchBreedImages test passed"
 
@@ -52,7 +53,7 @@ getBreedFamilyName :: BreedFamily -> String
 getBreedFamilyName breedFamily = breedFamily.name
 
 isValidImageUrl :: String -> Boolean
-isValidImageUrl url =  startsWith "https://images.dog.ceo" url && contains "jpg" url
+isValidImageUrl url = startsWith "https://images.dog.ceo" url && contains "jpg" url
 
 startsWith :: String -> String -> Boolean
 startsWith prefix str = indexOf (Pattern prefix) str == Just 0

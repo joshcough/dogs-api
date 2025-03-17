@@ -61,6 +61,7 @@ main = do
           -- Create a proper Breed record
           let
             slashIndex = indexOf (Pattern "/") breedStr
+
             breed =
               Breed
                 { name:

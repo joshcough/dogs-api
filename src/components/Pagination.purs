@@ -11,12 +11,12 @@ import Web.DOM.Element (Element, toNode)
 import Web.DOM.Node (appendChild, setTextContent)
 
 -- Type that bundles all pagination UI elements
-type PaginationElements =
-  { container :: Element
-  , prevButton :: Element
-  , nextButton :: Element
-  , pageInfo :: Element
-  }
+type PaginationElements
+  = { container :: Element
+    , prevButton :: Element
+    , nextButton :: Element
+    , pageInfo :: Element
+    }
 
 -- Create pagination controls
 createPaginationControls :: Document -> Effect PaginationElements

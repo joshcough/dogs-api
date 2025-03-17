@@ -8,6 +8,6 @@
     "url": "^0.11.4"
   },
   "scripts": {
-    "format": "find src -name \"*.purs\" -exec purs-tidy format-in-place {} \\;"
+    "format": "./format.sh"
   }
 }
