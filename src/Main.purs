@@ -11,7 +11,7 @@ import Web.DOM.ParentNode (QuerySelector(..), querySelector)
 import Web.DOM.Document (toParentNode, createElement)
 import Web.DOM.Node (appendChild, setTextContent)
 import Web.DOM.Element (toNode)
-import Web.DOM.Element as Element
+import BreedComponent (renderBreedList)
 
 main :: Effect Unit
 main = do
@@ -26,14 +26,21 @@ main = do
     Just container -> do
       -- Create heading element
       heading <- createElement "h1" docAsDoc
-      setTextContent "Hello from PureScript!" (toNode heading)
+      setTextContent "Dog Breeds Explorer" (toNode heading)
 
-      -- Create paragraph element
+      -- Create intro paragraph
       para <- createElement "p" docAsDoc
-      setTextContent "This is a basic web page rendered with PureScript" (toNode para)
+      setTextContent "Browse all dog breeds and their sub-breeds below." (toNode para)
+
+      -- Create a container for the breeds
+      breedsContainer <- createElement "div" docAsDoc
 
       -- Add elements to container
       _ <- appendChild (toNode heading) (toNode container)
       _ <- appendChild (toNode para) (toNode container)
+      _ <- appendChild (toNode breedsContainer) (toNode container)
 
-      log "HTML elements added to the page"
+      -- Render the breeds list in the container
+      renderBreedList docAsDoc breedsContainer
+
+      log "Application initialized"
