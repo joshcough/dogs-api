@@ -15,7 +15,7 @@ import Test.Assert as Assert
 testFetchDogBreedsWithCache :: Aff Unit
 testFetchDogBreedsWithCache = do
   log "Testing fetchDogBreedsWithCache..."
-  cache <- initCache
+  cache <- liftEffect $ initCache
   result1 <- fetchDogBreedsWithCache cache
   result2 <- fetchDogBreedsWithCache cache
   case result1 of
@@ -32,7 +32,7 @@ testFetchDogBreedsWithCache = do
 testFetchBreedImagesWithCache :: Aff Unit
 testFetchBreedImagesWithCache = do
   log "Testing fetchBreedImagesWithCache..."
-  cache <- initCache
+  cache <- liftEffect $ initCache
   let frenchBulldog = Breed { name: "bulldog", subBreed: Just "french" }
   let bostonBulldog = Breed { name: "bulldog", subBreed: Just "boston" }
   result1 <- fetchBreedImagesWithCache frenchBulldog cache

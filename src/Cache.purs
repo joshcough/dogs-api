@@ -1,7 +1,6 @@
 module Cache where
 
 import Prelude
-
 import Api (BreedFamily, Breed, fetchDogBreeds, fetchBreedImages)
 import Data.Either (Either(..))
 import Data.Map as Map
@@ -19,25 +18,25 @@ type Cache =
   , images :: Map.Map Breed (Array String)
   }
 
-data CacheResult a = Hit a | Miss a
+data CacheResult a
+  = Hit a
+  | Miss a
 
-getCacheResultValue :: forall a . CacheResult a -> a
+getCacheResultValue :: forall a. CacheResult a -> a
 getCacheResultValue (Hit a) = a
+
 getCacheResultValue (Miss a) = a
 
 -- Initialize an empty cache
-initCache :: Aff (Ref Cache)
-initCache = liftEffect initCacheEff
-
-initCacheEff :: Effect (Ref Cache)
-initCacheEff = Ref.new { breeds: Nothing, images: Map.empty }
+initCache :: Effect (Ref Cache)
+initCache = Ref.new { breeds: Nothing, images: Map.empty }
 
 -- Fetch dog breeds with caching
 fetchDogBreedsWithCache :: Ref Cache -> Aff (Either String (CacheResult (Array BreedFamily)))
 fetchDogBreedsWithCache =
   fetchWithCache
     (\c -> c.breeds)
-    (\breeds cache -> cache {breeds = Just breeds})
+    (\breeds cache -> cache { breeds = Just breeds })
     fetchDogBreeds
 
 -- Fetch breed images with caching
@@ -45,16 +44,20 @@ fetchBreedImagesWithCache :: Breed -> Ref Cache -> Aff (Either String (CacheResu
 fetchBreedImagesWithCache breed =
   fetchWithCache
     (\c -> Map.lookup breed c.images)
-    (\images cache -> cache {images = Map.insert breed images cache.images})
+    (\images cache -> cache { images = Map.insert breed images cache.images })
     (fetchBreedImages breed)
 
--- A function for working with the cache.
-fetchWithCache :: forall a . Show a =>
-  (Cache -> Maybe a) ->
-  (a -> Cache -> Cache) ->
-  Aff (Either String a) ->
-  Ref Cache ->
-  Aff (Either String (CacheResult a))
+-- Tries to retrieve a value from the cache
+-- If it is not present, runs the effect to retrieve it,
+-- and writes that value into the cache.
+fetchWithCache
+  :: forall a
+   . Show a
+  => (Cache -> Maybe a)
+  -> (a -> Cache -> Cache)
+  -> Aff (Either String a)
+  -> Ref Cache
+  -> Aff (Either String (CacheResult a))
 fetchWithCache readCache writeCache fetchNewData cacheRef = do
   cache <- liftEffect $ Ref.read cacheRef
   case readCache cache of
