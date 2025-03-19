@@ -4,8 +4,8 @@ module Components.BreedList
   ) where
 
 import Prelude
-import Cache (Cache, fetchDogBreedsWithCache)
-import DogsApi (BreedFamily)
+import Cache (Cache)
+import BreedData (BreedData, BreedFamily)
 import Data.Array (length)
 import Data.Const (Const)
 import Data.Either (Either(..))
@@ -17,6 +17,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import HasDogBreeds (getDogBreeds, runCacheBreedM)
 
 -- | Component output type
 data Output
@@ -31,12 +32,12 @@ data Action
 type State
   = { isLoading :: Boolean
     , error :: Maybe String
-    , cache :: Ref Cache
+    , cache :: Ref (Cache BreedData)
     , breedFamilies :: Maybe (Array BreedFamily)
     }
 
 -- | Component definition
-component :: forall i m. MonadAff m => Ref Cache -> H.Component (Const Void) i Output m
+component :: forall i m. MonadAff m => Ref (Cache BreedData) -> H.Component (Const Void) i Output m
 component cache =
   H.mkComponent
     { initialState:
@@ -107,8 +108,9 @@ handleAction = case _ of
   Initialize -> do
     state <- H.get
     H.liftEffect $ log "Initializing breed list component"
-    breeds <- H.liftAff $ fetchDogBreedsWithCache state.cache
-    case breeds of
+    -- Use HasDogBreeds typeclass via CacheBreedM
+    result <- H.liftAff $ runCacheBreedM state.cache getDogBreeds
+    case result of
       Right bs -> H.modify_ _ { isLoading = false, breedFamilies = Just bs }
       Left err -> do
         H.modify_ _ { isLoading = false, error = Just err }

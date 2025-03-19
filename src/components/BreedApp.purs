@@ -1,13 +1,13 @@
 module Components.BreedApp (component) where
 
 import Prelude
+import BreedData (Breed(..), BreedData)
 import Cache (Cache)
 import Components.BreedDetails as BreedDetails
 import Components.BreedList as BreedList
 import Data.Const (Const)
 import Data.Maybe (maybe)
 import Data.String (Pattern(..), indexOf, take, drop)
-import DogsApi (Breed(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
 import Effect.Ref (Ref)
@@ -18,7 +18,7 @@ import Type.Proxy (Proxy(..))
 -- | Component state
 type State
   = { currentView :: View
-    , cache :: Ref Cache
+    , cache :: Ref (Cache BreedData)
     }
 
 -- | View state enum - matches the original AppState
@@ -38,7 +38,7 @@ type Slots
     )
 
 -- | Component definition
-component :: forall q i o m. MonadAff m => Ref Cache -> H.Component q i o m
+component :: forall q i o m. MonadAff m => Ref (Cache BreedData) -> H.Component q i o m
 component cache =
   H.mkComponent
     { initialState: \_ -> { currentView: BreedListState, cache: cache }

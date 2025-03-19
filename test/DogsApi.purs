@@ -1,12 +1,13 @@
 module Test.DogsApi where
 
 import Prelude
+import BreedData (BreedFamily, Breed(..))
 import Data.Array (elem, length, null, all)
 import Data.Either (Either(..), isRight)
 import Data.Maybe (Maybe(..), isJust)
 import Data.String (indexOf)
 import Data.String.Pattern (Pattern(..))
-import DogsApi (BreedFamily, Breed(..), fetchDogBreeds, fetchBreedImages)
+import DogsApi (fetchDogBreeds, fetchBreedImages)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)

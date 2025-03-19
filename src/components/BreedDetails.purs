@@ -4,12 +4,12 @@ module Components.BreedDetails
   ) where
 
 import Prelude
-import Cache (Cache, fetchBreedImagesWithCache)
+import BreedData (Breed, BreedData)
+import Cache (Cache)
 import Data.Array (length)
 import Data.Const (Const)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import DogsApi (Breed)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
 import Effect.Ref (Ref)
@@ -17,6 +17,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import HasDogBreeds (getBreedImages, runCacheBreedM)
 import PaginationState as PS
 
 -- | Component output message
@@ -37,10 +38,10 @@ type State
     , pagination :: PS.PaginationState
     , isLoading :: Boolean
     , error :: Maybe String
-    , cache :: Ref Cache
+    , cache :: Ref (Cache BreedData)
     }
 
-component :: forall i m. MonadAff m => Ref Cache -> Breed -> H.Component (Const Void) i Output m
+component :: forall i m. MonadAff m => Ref (Cache BreedData) -> Breed -> H.Component (Const Void) i Output m
 component cache breed =
   H.mkComponent
     { initialState:
@@ -125,8 +126,8 @@ handleAction = case _ of
   Initialize -> do
     state <- H.get
     H.liftEffect $ log $ "Initializing breed details for: " <> show state.breed
-    -- Load breed images from the cache
-    result <- H.liftAff $ fetchBreedImagesWithCache state.breed state.cache
+    -- Use CacheBreedM through the HasDogBreeds typeclass
+    result <- H.liftAff $ runCacheBreedM state.cache $ getBreedImages state.breed
     case result of
       Left err -> H.modify_ _ { isLoading = false, error = Just err }
       Right images -> do

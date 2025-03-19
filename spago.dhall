@@ -15,12 +15,15 @@
   , "foldable-traversable"
   , "foreign-object"
   , "halogen"
+  , "identity"
   , "integers"
   , "maybe"
+  , "newtype"
   , "ordered-collections"
   , "prelude"
   , "refs"
   , "strings"
+  , "transformers"
   , "tuples"
   ]
 , packages = ./packages.dhall
