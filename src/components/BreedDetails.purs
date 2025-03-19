@@ -40,7 +40,6 @@ type State
     , cache :: Ref Cache
     }
 
--- | Component definition
 component :: forall i m. MonadAff m => Ref Cache -> Breed -> H.Component (Const Void) i Output m
 component cache breed =
   H.mkComponent
@@ -62,7 +61,6 @@ component cache breed =
               }
     }
 
--- | Render function
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
   HH.div_
@@ -80,14 +78,12 @@ render state =
             ]
     ]
 
--- | Render back button
 renderBackButton :: forall m. H.ComponentHTML Action () m
 renderBackButton =
   HH.button
     [ HE.onClick \_ -> HandleBackClick ]
     [ HH.text "Back to Breed List" ]
 
--- | Render pagination controls
 renderPagination :: forall m. State -> H.ComponentHTML Action () m
 renderPagination state =
   HH.div_
@@ -110,7 +106,6 @@ renderPagination state =
         [ HH.text "Next" ]
     ]
 
--- | Render images
 renderImages :: forall m. Array String -> H.ComponentHTML Action () m
 renderImages images =
   HH.div_
@@ -142,14 +137,6 @@ handleAction = case _ of
             , pagination = PS.initPaginationState 20 (length images)
             , error = Nothing
             }
-  HandleBackClick -> do
-    H.liftEffect $ log "Going back to breed list"
-    H.raise BackClicked
-  NextPage -> do
-    H.modify_ \state -> state { pagination = PS.nextPage state.pagination }
-    state <- H.get
-    H.liftEffect $ log $ "Next page - now on page: " <> show (state.pagination.currentPage + 1)
-  PreviousPage -> do
-    H.modify_ \state -> state { pagination = PS.prevPage state.pagination }
-    state <- H.get
-    H.liftEffect $ log $ "Previous page - now on page: " <> show (state.pagination.currentPage + 1)
+  HandleBackClick -> H.raise BackClicked
+  NextPage -> H.modify_ \state -> state { pagination = PS.nextPage state.pagination }
+  PreviousPage -> H.modify_ \state -> state { pagination = PS.prevPage state.pagination }

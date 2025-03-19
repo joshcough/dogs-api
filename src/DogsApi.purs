@@ -1,11 +1,14 @@
 module DogsApi
-  ( BreedFamily
+  ( -- Types
+    BreedFamily
   , Breed(..)
+    -- API Functions
   , fetchDogBreeds
   , fetchBreedImages
   ) where
 
 import Prelude
+
 import Affjax (Error, printError)
 import Affjax.Node as AX
 import Affjax.ResponseFormat as ResponseFormat
@@ -20,48 +23,66 @@ import Effect.Aff (Aff)
 import Foreign.Object as Object
 import JsonEither as JE
 
-type BreedFamily
-  = { name :: String, subBreeds :: Array String }
+-- | Type representing a breed family with its sub-breeds
+type BreedFamily =
+  { name :: String
+  , subBreeds :: Array String
+  }
 
-newtype Breed
-  = Breed { name :: String, subBreed :: Maybe String }
+-- | Type representing a specific dog breed, optionally with a sub-breed
+newtype Breed =
+  Breed
+    { name :: String
+    , subBreed :: Maybe String
+    }
 
 derive instance Eq Breed
 derive instance Ord Breed
+
 instance Show Breed where
   show (Breed { name, subBreed }) = "Breed " <> show { name, subBreed }
 
--- Function to fetch all breeds with their sub-breeds
+-- | Fetches all dog breeds with their sub-breeds from the API
 fetchDogBreeds :: Aff (Either String (Array BreedFamily))
 fetchDogBreeds = dogsApiRequest "/breeds/list/all" deserializeBreedFamiliesArray
   where
+  -- Convert JSON response to an array of breed families
   deserializeBreedFamiliesArray :: JSON.Json -> Either String (Array BreedFamily)
   deserializeBreedFamiliesArray json = do
     breedEntries <- map Object.toUnfoldable $ JE.jsonObject json
     traverse deserializeBreedFamily breedEntries
 
+  -- Convert a single breed entry to a BreedFamily
   deserializeBreedFamily :: Tuple String JSON.Json -> Either String BreedFamily
   deserializeBreedFamily (Tuple name subBreedsJson) = do
     subBreeds <- deserializeSubBreeds subBreedsJson
     pure { name, subBreeds }
 
+  -- Parse the sub-breeds array from JSON
   deserializeSubBreeds :: JSON.Json -> Either String (Array String)
   deserializeSubBreeds json = JE.jsonArray json >>= traverse JE.jsonString
 
--- Function to fetch images for a specific breed
+-- | Fetches images for a specific breed from the API
 fetchBreedImages :: Breed -> Aff (Either String (Array String))
 fetchBreedImages (Breed { name, subBreed }) = do
   let
+    -- Handle sub-breed path component if present
     subBreedName = maybe "" (\s -> "/" <> s) subBreed
-
+    -- Construct API path
     path = "/breed/" <> name <> subBreedName <> "/images"
+
   dogsApiRequest path deserializeBreedImages
   where
+  -- Parse the image URLs array from JSON
   deserializeBreedImages :: JSON.Json -> Either String (Array String)
   deserializeBreedImages imagesJson = JE.jsonArray imagesJson >>= traverse JE.jsonString
 
--- Construct a request to the dogs api service with the given path
--- Make the request, extract json from the message field, and run the given handler on it.
+-- | Helper function to make requests to the Dog API
+-- |
+-- | - Constructs the full URL
+-- | - Makes the request with proper timeout
+-- | - Extracts the "message" field from response
+-- | - Runs the provided handler on the extracted JSON
 dogsApiRequest :: forall a. String -> (JSON.Json -> Either String a) -> Aff (Either String a)
 dogsApiRequest path handler = do
   response <- map (lmap prefixNetworkError) (AX.request requestConfig)
@@ -70,15 +91,17 @@ dogsApiRequest path handler = do
   baseUrl = "https://dog.ceo/api"
   fullUrl = baseUrl <> path
 
-  requestConfig = AX.defaultRequest {
-    timeout = Just (Milliseconds 10000.0),
-    url = fullUrl,
-    responseFormat = ResponseFormat.json
-  }
+  requestConfig = AX.defaultRequest
+    { timeout = Just (Milliseconds 10000.0)
+    , url = fullUrl
+    , responseFormat = ResponseFormat.json
+    }
 
+  -- Add context to network errors
   prefixNetworkError :: Error -> String
   prefixNetworkError err = "Network error for " <> fullUrl <> ": " <> printError err
 
+  -- Extract message field and handle parsing
   extractAndParseMessage :: AX.Response JSON.Json -> Either String a
   extractAndParseMessage r =
     JE.jsonField "message" r.body

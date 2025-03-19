@@ -5,7 +5,7 @@ import Cache (Cache)
 import Components.BreedDetails as BreedDetails
 import Components.BreedList as BreedList
 import Data.Const (Const)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (maybe)
 import Data.String (Pattern(..), indexOf, take, drop)
 import DogsApi (Breed(..))
 import Effect.Aff.Class (class MonadAff)
@@ -41,17 +41,9 @@ type Slots
 component :: forall q i o m. MonadAff m => Ref Cache -> H.Component q i o m
 component cache =
   H.mkComponent
-    { initialState:
-        \_ ->
-          { currentView: BreedListState
-          , cache: cache
-          }
+    { initialState: \_ -> { currentView: BreedListState, cache: cache }
     , render
-    , eval:
-        H.mkEval
-          $ H.defaultEval
-              { handleAction = handleAction
-              }
+    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
     }
 
 -- | Slot proxies
@@ -86,16 +78,12 @@ handleAction :: forall m o. MonadAff m => Action -> H.HalogenM State Action Slot
 handleAction = case _ of
   SelectBreed breedStr -> do
     H.liftEffect $ log $ "Selected breed: " <> breedStr
-    -- Parse the breed string (same logic as original)
     let
       slashIndex = indexOf (Pattern "/") breedStr
 
       breed =
         Breed
-          { name:
-              case slashIndex of
-                Nothing -> breedStr
-                Just ix -> take ix breedStr
+          { name: maybe breedStr (\ix -> take ix breedStr) slashIndex
           , subBreed: map (\ix -> drop (ix + 1) breedStr) slashIndex
           }
     H.modify_ _ { currentView = BreedDetailsState breed }
