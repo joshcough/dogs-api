@@ -1,7 +1,14 @@
-module Cache where
+module Cache
+  ( Cache
+  , CacheResult(..)
+  , getCacheResultValue
+  , initCache
+  , fetchDogBreedsWithCache
+  , fetchBreedImagesWithCache
+  ) where
 
 import Prelude
-import Api (BreedFamily, Breed, fetchDogBreeds, fetchBreedImages)
+import DogsApi (BreedFamily, Breed, fetchDogBreeds, fetchBreedImages)
 import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
@@ -11,12 +18,15 @@ import Effect.Class (liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
--- Define the cache type that only stores successful responses
+-- Cache that contains breed families and images for each breed
+-- Constructor is not exported so that the cache cannot be directly manipulated
 type Cache
   = { breeds :: Maybe (Array BreedFamily)
     , images :: Map.Map Breed (Array String)
     }
 
+-- Calls in this module return a CacheResult
+-- This is mainly for testing, and regular clients should use getCacheResultValue
 data CacheResult a
   = Hit a
   | Miss a
@@ -47,8 +57,8 @@ fetchBreedImagesWithCache breed =
     (fetchBreedImages breed)
 
 -- Tries to retrieve a value from the cache
--- If it is not present, runs the effect to retrieve it,
--- and writes that value into the cache.
+-- If it is present, simply return it.
+-- Else run the effect to retrieve it, write it into the cache, and then return it.
 fetchWithCache ::
   forall a.
   Show a =>

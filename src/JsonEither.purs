@@ -1,4 +1,9 @@
-module JsonEither where
+module JsonEither
+  ( jsonField
+  , jsonObject
+  , jsonArray
+  , jsonString
+  ) where
 
 import Prelude
 import Data.Argonaut.Core as JSON

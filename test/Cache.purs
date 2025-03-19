@@ -4,10 +4,10 @@ module Test.Cache
   ) where
 
 import Prelude
-import Api (Breed(..))
 import Cache (CacheResult(..), fetchDogBreedsWithCache, fetchBreedImagesWithCache, initCache)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import DogsApi (Breed(..))
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)

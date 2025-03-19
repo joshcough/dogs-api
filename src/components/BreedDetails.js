@@ -33,3 +33,23 @@ export function makeClickHandler(doc) {
     };
   };
 }
+
+export function addBackButtonListener(element) {
+  return function(callback) {
+    return function(doc) {
+      return function() {
+        element.addEventListener("click", function() {
+          callback();
+        });
+      };
+    };
+  };
+}
+
+export function setPaginationButtonDisabled(element) {
+  return function(isDisabled) {
+    return function() {
+      element.disabled = isDisabled;
+    };
+  };
+}

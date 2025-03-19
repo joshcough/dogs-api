@@ -1,4 +1,4 @@
-export function makeClickable(element) {
+export function makeBreedClickable(element) {
   return function(breedName) {
     return function(doc) {
       return function(onSelect) {
