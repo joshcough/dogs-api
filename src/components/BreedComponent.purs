@@ -28,15 +28,12 @@ renderBreedComponent doc container = do
   -- Create header
   heading <- createElement "h1" doc
   setTextContent "Dog Breeds Explorer" (toNode heading)
-  para <- createElement "p" doc
-  setTextContent "Browse all dog breeds and their sub-breeds below." (toNode para)
   -- Main content container
   contentContainer <- createElement "div" doc
   -- Append header elements
   let
     containerNode = toNode container
   _ <- appendChild (toNode heading) containerNode
-  _ <- appendChild (toNode para) containerNode
   _ <- appendChild (toNode appContainer) containerNode
   _ <- appendChild (toNode contentContainer) (toNode appContainer)
   -- Define state transition functions

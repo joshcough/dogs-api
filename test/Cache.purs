@@ -34,6 +34,7 @@ testFetchBreedImagesWithCache = do
   cache <- liftEffect $ initCache
   let
     frenchBulldog = Breed { name: "bulldog", subBreed: Just "french" }
+
     bostonBulldog = Breed { name: "bulldog", subBreed: Just "boston" }
   result1 <- fetchBreedImagesWithCache frenchBulldog cache
   result2 <- fetchBreedImagesWithCache frenchBulldog cache

@@ -8,6 +8,7 @@
   , "assert"
   , "bifunctors"
   , "console"
+  , "datetime"
   , "effect"
   , "either"
   , "foldable-traversable"
