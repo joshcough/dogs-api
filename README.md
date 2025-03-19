@@ -1,21 +1,12 @@
-# To compile
+# Dogs API For Panoramic by Josh Cough
 
-spago build
+## Commands
 
-# To test
+* To compile - `npm run compile`
+* To test - `npm run test`
+* To build and run app - `npm run start`
 
-spago test
-
-# To build app
-
-spago bundle-app --to dist/app.js --minify
-
-# To run app
-
-npx http-server
-open http://127.0.0.1:8080
-
-# TODO: 
+## TODO: 
 
 * Refactor BreedList and BreedDetails so that they don't have to make network calls. 
   This can be done a new class that is something like this:

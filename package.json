@@ -8,6 +8,9 @@
     "url": "^0.11.4"
   },
   "scripts": {
-    "format": "./format.sh"
+    "compile": "spago build",
+    "format": "./format.sh",
+    "start": "spago bundle-app --to dist/app.js --minify && npx http-server",
+    "test": "spago test"
   }
 }
