@@ -6,7 +6,6 @@ export function makeBreedClickable(element) {
           element.style.cursor = "pointer";
           element.style.color = "#0066cc";
           element.style.textDecoration = "underline";
-
           element.addEventListener("click", function() {
             onSelect(breedName)();
           });

@@ -18,9 +18,6 @@ import Effect.Aff (Aff)
 import Foreign.Object as Object
 import JsonEither as JE
 
-baseUrl :: String
-baseUrl = "https://dog.ceo/api"
-
 type BreedFamily = { name :: String, subBreeds :: Array String }
 
 newtype Breed = Breed { name :: String, subBreed :: Maybe String }
@@ -64,5 +61,6 @@ fetchBreedImages (Breed { name, subBreed }) = do
 -- Make the request, extract json from the message field, and run the given handler on it.
 dogsApiRequest :: forall a. String -> (JSON.Json -> Either String a) -> Aff (Either String a)
 dogsApiRequest path handler = do
+  let baseUrl = "https://dog.ceo/api"
   response <- map (lmap AX.printError) (AX.get ResponseFormat.json $ baseUrl <> path)
   pure $ response >>= \res -> JE.jsonField "message" res.body >>= handler

@@ -44,7 +44,7 @@ displayErrorMessage doc container err = do
   setTextContent ("Error: " <> err) (toNode errorMsg)
   appendChild (toNode errorMsg) (toNode container)
 
--- Helper function to display the breed list once data is loaded
+-- Display the breed list once data is loaded
 displayBreedList :: Document -> Element -> Array BreedFamily -> OnBreedSelectFn -> Effect Unit
 displayBreedList doc container breedFamilies onBreedSelect = do
   -- Create a heading
@@ -61,34 +61,24 @@ displayBreedList doc container breedFamilies onBreedSelect = do
   _ <- appendChild (toNode breedsContainer) (toNode container)
   pure unit
 
--- Create a component to display a single breed family
+-- Create a element to display a single breed family
 createBreedElement :: Document -> BreedFamily -> OnBreedSelectFn -> Effect Element
 createBreedElement doc breedFamily onBreedSelect = do
   -- Create container for the breed family
   container <- createElement "div" doc
-  -- Add breed name as heading
-  breedFamilyNameElement <- createElement "h3" doc
-  setTextContent breedFamily.name (toNode breedFamilyNameElement)
-  _ <- appendChild (toNode breedFamilyNameElement) (toNode container)
-  -- If there are no sub breeds, then make the breed family name clickable.
-  if length breedFamily.subBreeds == 0 then
+  -- If there are no sub breeds, then display only the breed family name.
+  if length breedFamily.subBreeds == 0 then do
+    breedFamilyNameElement <- createElement "h3" doc
+    setTextContent breedFamily.name (toNode breedFamilyNameElement)
+    _ <- appendChild (toNode breedFamilyNameElement) (toNode container)
     makeBreedClickable breedFamilyNameElement breedFamily.name doc onBreedSelect
-  -- else there are sub-breeds, display them in a list and make each sub-breed clickable.
+  -- else there are sub-breeds, so display each sub breed instead
   else do
-    subBreedsHeading <- createElement "h4" doc
-    setTextContent "Sub-breeds:" (toNode subBreedsHeading)
-    _ <- appendChild (toNode subBreedsHeading) (toNode container)
-    list <- createElement "ul" doc
     for_ breedFamily.subBreeds \subBreed -> do
-      item <- createElement "li" doc
-      setTextContent subBreed (toNode item)
-      let
-        fullBreedName = breedFamily.name <> "/" <> subBreed
-      makeBreedClickable item fullBreedName doc onBreedSelect
-      _ <- appendChild (toNode item) (toNode list)
-      pure unit
-    _ <- appendChild (toNode list) (toNode container)
-    pure unit
+      item <- createElement "h3" doc
+      setTextContent (breedFamily.name <> " " <> subBreed) (toNode item)
+      _ <- appendChild (toNode item) (toNode container)
+      makeBreedClickable item (breedFamily.name <> "/" <> subBreed) doc onBreedSelect
   pure container
 
 foreign import makeBreedClickable :: Element -> String -> Document -> OnBreedSelectFn -> Effect Unit
