@@ -6,6 +6,27 @@
 * To test - `npm run test`
 * To build and run app - `npm run start`
 
+## Troubleshooting
+
+run `npm install xhr2` if you see the following error:
+
+```
+node:internal/modules/package_json_reader:267
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'xhr2' imported from /Users/joshuacough/work/panoramic_testing_1/output/Affjax.Node/foreign.js
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:267:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:854:18)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:688:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:612:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:595:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:248:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:136:49) {
+  code: 'ERR_MODULE_NOT_FOUND'
+```
+
 ## TODO: 
 
 * Refactor BreedList and BreedDetails so that they don't have to make network calls. 
