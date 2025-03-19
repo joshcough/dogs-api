@@ -1,18 +1,18 @@
-module Main where
+module Main (main) where
 
 import Prelude
-import Components.BreedComponent (renderBreedComponent)
+import Cache (initCache)
+import Components.BreedApp as BreedApp
 import Effect (Effect)
-import Effect.Console (error)
-import Data.Maybe (maybe)
-import Web.HTML (window)
-import Web.HTML.Window (document)
-import Web.HTML.HTMLDocument (toDocument)
-import Web.DOM.ParentNode (QuerySelector(..), querySelector)
-import Web.DOM.Document (toParentNode)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
+import Halogen.Aff as HA
+import Halogen.VDom.Driver (runUI)
 
 main :: Effect Unit
-main = do
-  htmlDoc <- map toDocument $ window >>= document
-  mContainer <- querySelector (QuerySelector "#app") (toParentNode htmlDoc)
-  maybe (error "Could not find app element") (renderBreedComponent htmlDoc) mContainer
+main =
+  launchAff_ do
+    cache <- liftEffect initCache
+    body <- HA.awaitBody
+    _ <- runUI (BreedApp.component cache) unit body
+    pure unit

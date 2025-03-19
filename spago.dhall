@@ -8,11 +8,13 @@
   , "assert"
   , "bifunctors"
   , "console"
+  , "const"
   , "datetime"
   , "effect"
   , "either"
   , "foldable-traversable"
   , "foreign-object"
+  , "halogen"
   , "integers"
   , "maybe"
   , "ordered-collections"
@@ -20,8 +22,6 @@
   , "refs"
   , "strings"
   , "tuples"
-  , "web-dom"
-  , "web-html"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

@@ -4,7 +4,7 @@ module Test.Cache
   ) where
 
 import Prelude
-import Cache (CacheResult(..), fetchDogBreedsWithCache, fetchBreedImagesWithCache, initCache)
+import Cache (CacheResult(..), fetchDogBreedsWithCache', fetchBreedImagesWithCache', initCache)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import DogsApi (Breed(..))
@@ -17,10 +17,10 @@ import Test.Assert as Assert
 -- Test for fetching dog breeds
 testFetchDogBreedsWithCache :: Aff Unit
 testFetchDogBreedsWithCache = do
-  log "Testing fetchDogBreedsWithCache..."
+  log "Testing fetchDogBreedsWithCache'..."
   cache <- liftEffect $ initCache
-  result1 <- fetchDogBreedsWithCache cache
-  result2 <- fetchDogBreedsWithCache cache
+  result1 <- fetchDogBreedsWithCache' cache
+  result2 <- fetchDogBreedsWithCache' cache
   liftEffect
     $ do
         expectMiss result1
@@ -30,15 +30,15 @@ testFetchDogBreedsWithCache = do
 ---- Test for fetching breed images
 testFetchBreedImagesWithCache :: Aff Unit
 testFetchBreedImagesWithCache = do
-  log "Testing fetchBreedImagesWithCache..."
+  log "Testing fetchBreedImagesWithCache'..."
   cache <- liftEffect $ initCache
   let
     frenchBulldog = Breed { name: "bulldog", subBreed: Just "french" }
 
     bostonBulldog = Breed { name: "bulldog", subBreed: Just "boston" }
-  result1 <- fetchBreedImagesWithCache frenchBulldog cache
-  result2 <- fetchBreedImagesWithCache frenchBulldog cache
-  result3 <- fetchBreedImagesWithCache bostonBulldog cache
+  result1 <- fetchBreedImagesWithCache' frenchBulldog cache
+  result2 <- fetchBreedImagesWithCache' frenchBulldog cache
+  result3 <- fetchBreedImagesWithCache' bostonBulldog cache
   liftEffect
     $ do
         expectMiss result1

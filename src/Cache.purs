@@ -1,10 +1,14 @@
 module Cache
+  -- Public API
   ( Cache
-  , CacheResult(..)
   , getCacheResultValue
   , initCache
   , fetchDogBreedsWithCache
   , fetchBreedImagesWithCache
+  -- For testing only
+  , CacheResult(..)
+  , fetchDogBreedsWithCache'
+  , fetchBreedImagesWithCache'
   ) where
 
 import Prelude
@@ -36,25 +40,33 @@ getCacheResultValue (Hit a) = a
 
 getCacheResultValue (Miss a) = a
 
--- Initialize an empty cache
+-- | Initialize an empty cache
 initCache :: Effect (Ref Cache)
 initCache = Ref.new { breeds: Nothing, images: Map.empty }
 
--- Fetch dog breeds with caching
-fetchDogBreedsWithCache :: Ref Cache -> Aff (Either String (CacheResult (Array BreedFamily)))
-fetchDogBreedsWithCache =
+-- | Fetch dog breeds with caching
+fetchDogBreedsWithCache' :: Ref Cache -> Aff (Either String (CacheResult (Array BreedFamily)))
+fetchDogBreedsWithCache' =
   fetchWithCache
     (\c -> c.breeds)
     (\breeds cache -> cache { breeds = Just breeds })
     fetchDogBreeds
 
+-- | A more user friendly version of fetchDogBreedsWithCache' that strips the CacheResult constructor
+fetchDogBreedsWithCache :: Ref Cache -> Aff (Either String (Array BreedFamily))
+fetchDogBreedsWithCache = map (map (map getCacheResultValue)) fetchDogBreedsWithCache'
+
 -- Fetch breed images with caching
-fetchBreedImagesWithCache :: Breed -> Ref Cache -> Aff (Either String (CacheResult (Array String)))
-fetchBreedImagesWithCache breed =
+fetchBreedImagesWithCache' :: Breed -> Ref Cache -> Aff (Either String (CacheResult (Array String)))
+fetchBreedImagesWithCache' breed =
   fetchWithCache
     (\c -> Map.lookup breed c.images)
     (\images cache -> cache { images = Map.insert breed images cache.images })
     (fetchBreedImages breed)
+
+-- | A more user friendly version of fetchBreedImagesWithCache' that strips the CacheResult constructor
+fetchBreedImagesWithCache :: Breed -> Ref Cache -> Aff (Either String (Array String))
+fetchBreedImagesWithCache breed = map (map (map getCacheResultValue)) (fetchBreedImagesWithCache' breed)
 
 -- Tries to retrieve a value from the cache
 -- If it is present, simply return it.

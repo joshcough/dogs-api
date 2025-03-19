@@ -1,185 +1,155 @@
-module Components.BreedDetails (renderBreedDetails) where
+module Components.BreedDetails
+  ( Output(..)
+  , component
+  ) where
 
 import Prelude
-
-import Cache (Cache, fetchBreedImagesWithCache, getCacheResultValue)
+import Cache (Cache, fetchBreedImagesWithCache)
 import Data.Array (length)
+import Data.Const (Const)
 import Data.Either (Either(..))
-import Data.Traversable (for_)
+import Data.Maybe (Maybe(..))
 import DogsApi (Breed)
-import Effect (Effect)
-import Effect.Aff (launchAff_)
-import Effect.Class (liftEffect)
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
 import Effect.Ref (Ref)
-import Effect.Ref as Ref
-import PaginationState (PaginationState, isNextDisabled, isPrevDisabled, totalPages)
-import PaginationState as PaginationState
-import Web.DOM.Document (Document, createElement)
-import Web.DOM.Element (Element, toNode)
-import Web.DOM.Node (appendChild, setTextContent, removeChild)
+import Halogen as H
+import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties as HP
+import PaginationState as PS
 
--- | Type that bundles all pagination UI elements
-type PaginationElements =
-  { container :: Element
-  , prevButton :: Element
-  , nextButton :: Element
-  , pageInfo :: Element
-  }
+-- | Component output message
+data Output
+  = BackClicked
 
--- | Foreign JavaScript imports
-foreign import setPaginationButtonDisabled :: Element -> Boolean -> Effect Unit
-foreign import addClickListener :: Element -> Effect Unit -> Effect Unit
-foreign import setImageSrc :: Element -> String -> Effect Unit
-foreign import clearElementContents :: Element -> Effect Unit
-foreign import createEventHandler :: Document -> (Unit -> Effect Unit) -> Effect (Effect Unit)
-foreign import attachBackButtonListener :: Element -> Effect Unit -> Document -> Effect Unit
+-- | Component action types
+data Action
+  = Initialize
+  | HandleBackClick
+  | NextPage
+  | PreviousPage
 
--- | Main component renderer for breed details
-renderBreedDetails :: Document -> Element -> Effect Unit -> Breed -> Ref Cache -> Effect Unit
-renderBreedDetails doc container backButtonOnClick breed cacheRef = do
-  -- Clear existing content
-  clearElementContents container
+-- | Component state
+type State
+  = { breed :: Breed
+    , images :: Array String
+    , pagination :: PS.PaginationState
+    , isLoading :: Boolean
+    , error :: Maybe String
+    , cache :: Ref Cache
+    }
 
-  -- Create loading message
-  loadingMsg <- createElement "p" doc
-  setTextContent ("Loading images for " <> show breed <> "...") (toNode loadingMsg)
-  _ <- appendChild (toNode loadingMsg) (toNode container)
+-- | Component definition
+component :: forall i m. MonadAff m => Ref Cache -> Breed -> H.Component (Const Void) i Output m
+component cache breed =
+  H.mkComponent
+    { initialState:
+        \_ ->
+          { breed
+          , images: []
+          , pagination: PS.initPaginationState 20 0
+          , isLoading: true
+          , error: Nothing
+          , cache
+          }
+    , render
+    , eval:
+        H.mkEval
+          $ H.defaultEval
+              { handleAction = handleAction
+              , initialize = Just Initialize
+              }
+    }
 
-  -- Create back button
-  backButton <- makeBackButton doc backButtonOnClick
-  _ <- appendChild (toNode backButton) (toNode container)
+-- | Render function
+render :: forall m. State -> H.ComponentHTML Action () m
+render state =
+  HH.div_
+    [ renderBackButton
+    , if state.isLoading then
+        HH.p_ [ HH.text $ "Loading images for " <> show state.breed <> "..." ]
+      else case state.error of
+        Just err -> HH.p_ [ HH.text $ "Error: " <> err ]
+        Nothing ->
+          HH.div_
+            [ HH.h2_ [ HH.text $ "Details for " <> show state.breed ]
+            , HH.p_ [ HH.text $ "Total images: " <> show (length state.images) ]
+            , renderPagination state
+            , renderImages (PS.getPageItems state.pagination state.images)
+            ]
+    ]
 
-  -- Fetch breed images
-  launchAff_ do
-    result <- fetchBreedImagesWithCache breed cacheRef
-    liftEffect do
-      -- Remove loading message
-      _ <- removeChild (toNode loadingMsg) (toNode container)
+-- | Render back button
+renderBackButton :: forall m. H.ComponentHTML Action () m
+renderBackButton =
+  HH.button
+    [ HE.onClick \_ -> HandleBackClick ]
+    [ HH.text "Back to Breed List" ]
 
-      case result of
-        -- Handle error case
-        Left err -> displayErrorMessage doc container err
-        -- Handle success case
-        Right cacheResult -> displayBreedDetails doc container breed (getCacheResultValue cacheResult)
+-- | Render pagination controls
+renderPagination :: forall m. State -> H.ComponentHTML Action () m
+renderPagination state =
+  HH.div_
+    [ HH.button
+        [ HP.disabled (PS.isPrevDisabled state.pagination)
+        , HE.onClick \_ -> PreviousPage
+        ]
+        [ HH.text "Previous" ]
+    , HH.span_
+        [ HH.text
+            $ "Page "
+            <> show (state.pagination.currentPage + 1)
+            <> " of "
+            <> show (PS.totalPages state.pagination)
+        ]
+    , HH.button
+        [ HP.disabled (PS.isNextDisabled state.pagination)
+        , HE.onClick \_ -> NextPage
+        ]
+        [ HH.text "Next" ]
+    ]
 
--- | Display error message when images cannot be loaded
-displayErrorMessage :: Document -> Element -> String -> Effect Unit
-displayErrorMessage doc container err = do
-  errorMsg <- createElement "p" doc
-  setTextContent ("Error: " <> err) (toNode errorMsg)
-  _ <- appendChild (toNode errorMsg) (toNode container)
-  pure unit
+-- | Render images
+renderImages :: forall m. Array String -> H.ComponentHTML Action () m
+renderImages images =
+  HH.div_
+    ( map
+        ( \imgUrl ->
+            HH.img
+              [ HP.src imgUrl
+              , HP.alt "Dog breed image"
+              ]
+        )
+        images
+    )
 
--- | Create a back button with attached event listener
-makeBackButton :: Document -> Effect Unit -> Effect Element
-makeBackButton doc backButtonOnClick = do
-  backButton <- createElement "button" doc
-  setTextContent "Back to Breed List" (toNode backButton)
-  attachBackButtonListener backButton backButtonOnClick doc
-  pure backButton
-
--- | Display breed details once images are loaded
-displayBreedDetails :: Document -> Element -> Breed -> Array String -> Effect Unit
-displayBreedDetails doc container breed images = do
-  -- Create heading with breed name
-  heading <- createElement "h2" doc
-  setTextContent ("Details for " <> show breed) (toNode heading)
-  _ <- appendChild (toNode heading) (toNode container)
-
-  -- Display total image count
-  totalCount <- createElement "p" doc
-  setTextContent ("Total images: " <> show (length images)) (toNode totalCount)
-  _ <- appendChild (toNode totalCount) (toNode container)
-
-  -- Initialize pagination
-  let imagesPerPage = 20
-  let initialState = PaginationState.initPaginationState imagesPerPage (length images)
-
-  -- Create pagination controls
-  paginationElements <- createPaginationControls doc
-  _ <- appendChild (toNode paginationElements.container) (toNode container)
-
-  -- Create mutable reference for pagination state
-  stateRef <- Ref.new initialState
-
-  -- Create image container
-  imageContainer <- createElement "div" doc
-  _ <- appendChild (toNode imageContainer) (toNode container)
-
-  -- Define display update function
-  let
-    updateDisplay state = do
-      -- Clear image container
-      clearElementContents imageContainer
-
-      -- Get images for current page
-      let pageImages = PaginationState.getPageItems state images
-
-      -- Display current images
-      for_ pageImages \imgUrl -> do
-        imgElement <- createElement "img" doc
-        setImageSrc imgElement imgUrl
-        _ <- appendChild (toNode imgElement) (toNode imageContainer)
-        pure unit
-
-      -- Update pagination UI elements
-      updatePaginationUI paginationElements state
-
-  -- Set up pagination button handlers
-  prevClickHandler <-
-    createEventHandler doc \_ -> do
-      currentState <- Ref.read stateRef
-      let newState = PaginationState.prevPage currentState
-      log $ "Previous clicked - new page: " <> show newState.currentPage
-      _ <- Ref.write newState stateRef
-      updateDisplay newState
-
-  nextClickHandler <-
-    createEventHandler doc \_ -> do
-      currentState <- Ref.read stateRef
-      let newState = PaginationState.nextPage currentState
-      log $ "Next clicked - new page: " <> show newState.currentPage
-      _ <- Ref.write newState stateRef
-      updateDisplay newState
-
-  -- Add event listeners to buttons
-  _ <- addClickListener paginationElements.prevButton prevClickHandler
-  _ <- addClickListener paginationElements.nextButton nextClickHandler
-
-  -- Initialize display with initial state
-  updateDisplay initialState
-
--- | Create pagination controls UI elements
-createPaginationControls :: Document -> Effect PaginationElements
-createPaginationControls doc = do
-  -- Create container
-  container <- createElement "div" doc
-
-  -- Create buttons and page info
-  prevButton <- createElement "button" doc
-  setTextContent "Previous" (toNode prevButton)
-
-  nextButton <- createElement "button" doc
-  setTextContent "Next" (toNode nextButton)
-
-  pageInfo <- createElement "span" doc
-
-  -- Append elements to container
-  _ <- appendChild (toNode prevButton) (toNode container)
-  _ <- appendChild (toNode pageInfo) (toNode container)
-  _ <- appendChild (toNode nextButton) (toNode container)
-
-  pure { container, prevButton, nextButton, pageInfo }
-
--- | Update pagination UI elements based on current state
-updatePaginationUI :: PaginationElements -> PaginationState -> Effect Unit
-updatePaginationUI elements state = do
-  -- Update page info text
-  setTextContent
-    ("Page " <> show (state.currentPage + 1) <> " of " <> show (totalPages state))
-    (toNode elements.pageInfo)
-
-  -- Enable/disable pagination buttons
-  setPaginationButtonDisabled elements.prevButton (isPrevDisabled state)
-  setPaginationButtonDisabled elements.nextButton (isNextDisabled state)
+-- | Action handler
+handleAction :: forall m. MonadAff m => Action -> H.HalogenM State Action () Output m Unit
+handleAction = case _ of
+  Initialize -> do
+    state <- H.get
+    H.liftEffect $ log $ "Initializing breed details for: " <> show state.breed
+    -- Load breed images from the cache
+    result <- H.liftAff $ fetchBreedImagesWithCache state.breed state.cache
+    case result of
+      Left err -> H.modify_ _ { isLoading = false, error = Just err }
+      Right images -> do
+        H.modify_
+          _
+            { isLoading = false
+            , images = images
+            , pagination = PS.initPaginationState 20 (length images)
+            , error = Nothing
+            }
+  HandleBackClick -> do
+    H.liftEffect $ log "Going back to breed list"
+    H.raise BackClicked
+  NextPage -> do
+    H.modify_ \state -> state { pagination = PS.nextPage state.pagination }
+    state <- H.get
+    H.liftEffect $ log $ "Next page - now on page: " <> show (state.pagination.currentPage + 1)
+  PreviousPage -> do
+    H.modify_ \state -> state { pagination = PS.prevPage state.pagination }
+    state <- H.get
+    H.liftEffect $ log $ "Previous page - now on page: " <> show (state.pagination.currentPage + 1)
