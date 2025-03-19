@@ -20,7 +20,7 @@ class Monad m <= HasDogBreeds m where
 And then having an implementation for MonadAff, and another for testing. 
 
 * After that is done, we can write some unit tests for all of the components, 
-  and we should be able make the Cache tests so that they don't make network calls either. 
+  and we should be able to make the Cache tests so that they don't make network calls either. 
 
 * The DogApi tests are also doing network calls, and technically that is more of an integration test.
   I need to learn about how people manage integration tests in a purescript project.
