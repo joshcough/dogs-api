@@ -11,11 +11,12 @@ import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
+import HasDogBreeds (mkCachedBreedData)
 
 main :: Effect Unit
 main =
   launchAff_ do
-    cache <- liftEffect $ initCache ({ breeds: Nothing, images: Map.empty } :: BreedData)
+    cacheRef <- liftEffect $ initCache ({ breeds: Nothing, images: Map.empty } :: BreedData)
     body <- HA.awaitBody
-    _ <- runUI (BreedApp.component cache) unit body
+    _ <- runUI (BreedApp.component $ mkCachedBreedData cacheRef) unit body
     pure unit

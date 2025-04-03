@@ -5,7 +5,6 @@
   , "affjax-node"
   , "argonaut-core"
   , "arrays"
-  , "assert"
   , "bifunctors"
   , "console"
   , "const"
@@ -22,8 +21,10 @@
   , "ordered-collections"
   , "prelude"
   , "refs"
+  , "spec"
+  , "spec-discovery"
+  , "spec-node"
   , "strings"
-  , "transformers"
   , "tuples"
   ]
 , packages = ./packages.dhall

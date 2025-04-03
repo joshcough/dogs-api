@@ -3,14 +3,12 @@ module Test.Main where
 import Prelude
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Test.Cache (testCacheMechanism)
-import Test.DogsApi (testFetchDogBreeds, testFetchBreedImages)
-import Test.PaginationState (testPaginationState)
+import Effect.Class (liftEffect)
+import Test.Spec.Discovery (discover)
+import Test.Spec.Reporter.Console (consoleReporter)
+import Test.Spec.Runner.Node (runSpecAndExitProcess)
 
 main :: Effect Unit
-main =
-  launchAff_ do
-    testFetchDogBreeds
-    testFetchBreedImages
-    testCacheMechanism
-    testPaginationState
+main = launchAff_ do
+  specs <- discover "Test\\..*"
+  liftEffect $ runSpecAndExitProcess [consoleReporter] specs

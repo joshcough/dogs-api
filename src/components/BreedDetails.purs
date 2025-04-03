@@ -4,20 +4,18 @@ module Components.BreedDetails
   ) where
 
 import Prelude
-import BreedData (Breed, BreedData)
-import Cache (Cache)
+import BreedData (Breed)
 import Data.Array (length)
 import Data.Const (Const)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
-import Effect.Ref (Ref)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import HasDogBreeds (getBreedImages, runCacheBreedM)
+import HasDogBreeds (class HasDogBreeds, getBreedImages)
 import PaginationState as PS
 
 -- | Component output message
@@ -32,16 +30,16 @@ data Action
   | PreviousPage
 
 -- | Component state
-type State
+type State a
   = { breed :: Breed
     , images :: Array String
     , pagination :: PS.PaginationState
     , isLoading :: Boolean
     , error :: Maybe String
-    , cache :: Ref (Cache BreedData)
+    , cache :: a
     }
 
-component :: forall i m. MonadAff m => Ref (Cache BreedData) -> Breed -> H.Component (Const Void) i Output m
+component :: forall a i m. MonadEffect m => HasDogBreeds a m => a -> Breed -> H.Component (Const Void) i Output m
 component cache breed =
   H.mkComponent
     { initialState:
@@ -62,7 +60,7 @@ component cache breed =
               }
     }
 
-render :: forall m. State -> H.ComponentHTML Action () m
+render :: forall a m. State a -> H.ComponentHTML Action () m
 render state =
   HH.div_
     [ renderBackButton
@@ -85,7 +83,7 @@ renderBackButton =
     [ HE.onClick \_ -> HandleBackClick ]
     [ HH.text "Back to Breed List" ]
 
-renderPagination :: forall m. State -> H.ComponentHTML Action () m
+renderPagination :: forall a m. State a -> H.ComponentHTML Action () m
 renderPagination state =
   HH.div_
     [ HH.button
@@ -121,13 +119,12 @@ renderImages images =
     )
 
 -- | Action handler
-handleAction :: forall m. MonadAff m => Action -> H.HalogenM State Action () Output m Unit
+handleAction :: forall a m. HasDogBreeds a m => MonadEffect m => Action -> H.HalogenM (State a) Action () Output m Unit
 handleAction = case _ of
   Initialize -> do
     state <- H.get
     H.liftEffect $ log $ "Initializing breed details for: " <> show state.breed
-    -- Use CacheBreedM through the HasDogBreeds typeclass
-    result <- H.liftAff $ runCacheBreedM state.cache $ getBreedImages state.breed
+    result <- H.lift $ getBreedImages state.cache state.breed
     case result of
       Left err -> H.modify_ _ { isLoading = false, error = Just err }
       Right images -> do

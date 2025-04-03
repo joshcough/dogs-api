@@ -2,101 +2,69 @@ module HasDogBreeds
   ( class HasDogBreeds
   , getDogBreeds
   , getBreedImages
-  , PureBreedM
-  , runPureBreedM
-  , CacheBreedM
-  , runCacheBreedM
+  , PureBreedData(..)
+  , runPureBreedData
+  , CachedBreedData(..)
+  , mkCachedBreedData
   ) where
 
 import Prelude
 import BreedData (Breed, BreedData, BreedFamily)
 import Cache (Cache(..), fetchWithCache)
-import Control.Monad.Reader (ReaderT, ask, runReaderT)
 import Data.Either (Either(..))
 import Data.Identity (Identity)
 import Data.Maybe (Maybe(..))
-import Data.Newtype (unwrap)
-import DogsApi (fetchDogBreeds, fetchBreedImages)
+import Data.Newtype (class Newtype)
 import Data.Map as Map
 import Effect.Aff (Aff)
-import Effect.Aff.Class (liftAff)
 import Effect.Ref (Ref)
+import DogsApi (fetchDogBreeds, fetchBreedImages)
 
-class
-  Monad m <= HasDogBreeds m where
-  getDogBreeds :: m (Either String (Array BreedFamily))
-  getBreedImages :: Breed -> m (Either String (Array String))
+-- The revised type class with data source parameter
+class Monad m <= HasDogBreeds a m where
+  getDogBreeds :: a -> m (Either String (Array BreedFamily))
+  getBreedImages :: a -> Breed -> m (Either String (Array String))
 
--- Pure implementation (for testing)
-newtype PureBreedM a
-  = PureBreedM (ReaderT BreedData Identity a)
+-- Pure data source for testing (using a newtype wrapper)
+newtype PureBreedData = PureBreedData BreedData
 
--- Derive necessary instances
-derive newtype instance functorPureBreedM :: Functor PureBreedM
+derive instance Newtype PureBreedData _
 
-derive newtype instance applyPureBreedM :: Apply PureBreedM
+-- Helper to unwrap the PureBreedData
+runPureBreedData :: PureBreedData -> BreedData
+runPureBreedData (PureBreedData breedData) = breedData
 
-derive newtype instance applicativePureBreedM :: Applicative PureBreedM
+-- Instance for pure data access with newtype
+instance hasDogBreedsPure :: HasDogBreeds PureBreedData Identity where
+  getDogBreeds (PureBreedData breedData) = pure case breedData.breeds of
+    Just breeds -> Right breeds
+    Nothing -> Left "No breeds available in data store"
 
-derive newtype instance bindPureBreedM :: Bind PureBreedM
+  getBreedImages (PureBreedData breedData) breed = pure case Map.lookup breed breedData.images of
+    Just images -> Right images
+    Nothing -> Left "No images available for this breed"
 
-derive newtype instance monadPureBreedM :: Monad PureBreedM
+-- Cache data source using a newtype for the Ref
+newtype CachedBreedData = CachedBreedData (Ref (Cache BreedData))
 
--- Helper to run the pure monad
-runPureBreedM :: forall a. BreedData -> PureBreedM a -> a
-runPureBreedM breedData (PureBreedM m) = unwrap (runReaderT m breedData)
+derive instance Newtype CachedBreedData _
 
--- Instance for pure data access
-instance hasDogBreedsPure :: HasDogBreeds PureBreedM where
-  getDogBreeds =
-    PureBreedM do
-      breedData <- ask
-      pure case breedData.breeds of
-        Just breeds -> Right breeds
-        Nothing -> Left "No breeds available in data store"
-  getBreedImages breed =
-    PureBreedM do
-      breedData <- ask
-      pure case Map.lookup breed breedData.images of
-        Just images -> Right images
-        Nothing -> Left "No images available for this breed"
-
--- Cache implementation uses a Ref to BreedData
--- Cache implementation uses a Ref to Cache BreedData
-newtype CacheBreedM a
-  = CacheBreedM (ReaderT (Ref (Cache BreedData)) Aff a)
-
-derive newtype instance functorCacheBreedM :: Functor CacheBreedM
-
-derive newtype instance applyCacheBreedM :: Apply CacheBreedM
-
-derive newtype instance applicativeCacheBreedM :: Applicative CacheBreedM
-
-derive newtype instance bindCacheBreedM :: Bind CacheBreedM
-
-derive newtype instance monadCacheBreedM :: Monad CacheBreedM
-
--- Helper to run the cache monad
-runCacheBreedM :: forall a. Ref (Cache BreedData) -> CacheBreedM a -> Aff a
-runCacheBreedM cacheRef (CacheBreedM m) = runReaderT m cacheRef
+-- Helper to create a new cached breed data source
+mkCachedBreedData :: Ref (Cache BreedData) -> CachedBreedData
+mkCachedBreedData = CachedBreedData
 
 -- Instance for cached data access
-instance hasDogBreedsCache :: HasDogBreeds CacheBreedM where
-  getDogBreeds =
-    CacheBreedM do
-      cacheRef <- ask
-      liftAff
-        $ fetchWithCache
-            (\(Cache breedData) -> breedData.breeds)
-            (\breeds (Cache breedData) -> Cache (breedData { breeds = Just breeds }))
-            fetchDogBreeds
-            cacheRef
-  getBreedImages breed =
-    CacheBreedM do
-      cacheRef <- ask
-      liftAff
-        $ fetchWithCache
-            (\(Cache breedData) -> Map.lookup breed breedData.images)
-            (\images (Cache breedData) -> Cache (breedData { images = Map.insert breed images breedData.images }))
-            (fetchBreedImages breed)
-            cacheRef
+instance hasDogBreedsCache :: HasDogBreeds CachedBreedData Aff where
+  getDogBreeds (CachedBreedData cacheRef) =
+    fetchWithCache
+      (\(Cache breedData) -> breedData.breeds)
+      (\breeds (Cache breedData) -> Cache (breedData { breeds = Just breeds }))
+      fetchDogBreeds
+      cacheRef
+
+  getBreedImages (CachedBreedData cacheRef) breed =
+    fetchWithCache
+      (\(Cache breedData) -> Map.lookup breed breedData.images)
+      (\images (Cache breedData) -> Cache (breedData { images = Map.insert breed images breedData.images }))
+      (fetchBreedImages breed)
+      cacheRef

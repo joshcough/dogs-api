@@ -4,20 +4,18 @@ module Components.BreedList
   ) where
 
 import Prelude
-import Cache (Cache)
-import BreedData (BreedData, BreedFamily)
+import BreedData (BreedFamily)
+import HasDogBreeds (class HasDogBreeds, getDogBreeds)
 import Data.Array (length)
 import Data.Const (Const)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
-import Effect.Ref (Ref)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import HasDogBreeds (getDogBreeds, runCacheBreedM)
 
 -- | Component output type
 data Output
@@ -29,15 +27,15 @@ data Action
   | HandleBreedClick String
 
 -- | Component state
-type State
+type State a
   = { isLoading :: Boolean
     , error :: Maybe String
-    , cache :: Ref (Cache BreedData)
+    , cache :: a
     , breedFamilies :: Maybe (Array BreedFamily)
     }
 
 -- | Component definition
-component :: forall i m. MonadAff m => Ref (Cache BreedData) -> H.Component (Const Void) i Output m
+component :: forall a i m. MonadEffect m => HasDogBreeds a m => a -> H.Component (Const Void) i Output m
 component cache =
   H.mkComponent
     { initialState:
@@ -57,7 +55,7 @@ component cache =
     }
 
 -- | Render function
-render :: forall m. State -> H.ComponentHTML Action () m
+render :: forall a m. State a -> H.ComponentHTML Action () m
 render state =
   HH.div_
     [ if state.isLoading then
@@ -103,13 +101,12 @@ renderBreedItem displayName breedId =
     [ HH.text displayName ]
 
 -- | Action handler
-handleAction :: forall m. MonadAff m => Action -> H.HalogenM State Action () Output m Unit
+handleAction :: forall a m. MonadEffect m => HasDogBreeds a m => Action -> H.HalogenM (State a) Action () Output m Unit
 handleAction = case _ of
   Initialize -> do
     state <- H.get
     H.liftEffect $ log "Initializing breed list component"
-    -- Use HasDogBreeds typeclass via CacheBreedM
-    result <- H.liftAff $ runCacheBreedM state.cache getDogBreeds
+    result <- H.lift $ getDogBreeds state.cache
     case result of
       Right bs -> H.modify_ _ { isLoading = false, breedFamilies = Just bs }
       Left err -> do

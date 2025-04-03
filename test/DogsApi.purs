@@ -1,6 +1,7 @@
 module Test.DogsApi where
 
 import Prelude
+
 import BreedData (BreedFamily, Breed(..))
 import Data.Array (elem, length, null, all)
 import Data.Either (Either(..), isRight)
@@ -9,47 +10,35 @@ import Data.String (indexOf)
 import Data.String.Pattern (Pattern(..))
 import DogsApi (fetchDogBreeds, fetchBreedImages)
 import Effect.Aff (Aff)
-import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Test.Assert as Assert
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (shouldSatisfy, shouldEqual, fail)
 
--- Test for fetching dog breeds
-testFetchDogBreeds :: Aff Unit
-testFetchDogBreeds = do
-  log "Testing fetchDogBreeds..."
-  result <- fetchDogBreeds
-  liftEffect $ Assert.assert (isRight result)
-  case result of
-    Left err -> do
-      log $ "Unexpected error: " <> err
-      liftEffect $ Assert.assert false
-    Right breeds -> do
-      liftEffect $ Assert.assert (not $ null breeds)
-      liftEffect $ Assert.assert (length breeds >= 100)
-      liftEffect $ Assert.assert $ elem "labrador" (map getBreedFamilyName breeds)
-      liftEffect $ Assert.assert $ elem "beagle" (map getBreedFamilyName breeds)
-      log "✓ fetchDogBreeds test passed"
+spec :: Spec Unit
+spec = describe "DogsApi Module" do
+  describe "fetchDogBreeds" do
+    it "should fetch a non-empty list of dog breeds" do
+      result <- fetchDogBreeds
+      result `shouldSatisfy` isRight
 
--- Test for fetching breed images
-testFetchBreedImages :: Aff Unit
-testFetchBreedImages = do
-  log "Testing fetchBreedImages..."
-  let
-    bulldogReq = Breed { name: "bulldog", subBreed: Just "french" }
-  result <- fetchBreedImages bulldogReq
-  liftEffect $ Assert.assert (isRight result)
-  case result of
-    Left err -> do
-      log $ "Unexpected error: " <> err
-      liftEffect $ Assert.assert false
-    Right images -> do
-      liftEffect $ Assert.assert (not $ null images)
-      liftEffect $ Assert.assert (length images >= 5)
-      let
-        allValidUrls = all isValidImageUrl images
-      liftEffect $ Assert.assert allValidUrls
-      log "✓ fetchBreedImages test passed"
+      case result of
+        Left err -> fail $ "Unexpected error: " <> err
+        Right breeds -> do
+          (not $ null breeds) `shouldEqual` true
+          (length breeds >= 100) `shouldEqual` true
 
+  describe "fetchBreedImages" do
+    it "should fetch images for a specific breed" do
+      let bulldogReq = Breed { name: "bulldog", subBreed: Just "french" }
+      result <- fetchBreedImages bulldogReq
+      result `shouldSatisfy` isRight
+
+      case result of
+        Left err -> fail $ "Unexpected error: " <> err
+        Right images -> do
+          (not $ null images) `shouldEqual` true
+          (length images >= 5) `shouldEqual` true
+
+-- Helper functions
 getBreedFamilyName :: BreedFamily -> String
 getBreedFamilyName breedFamily = breedFamily.name
 

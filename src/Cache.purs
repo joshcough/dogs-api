@@ -4,23 +4,15 @@ module Cache
   , fetchWithCache
   , getCacheResultValue
   , initCache
-  --  , fetchDogBreedsWithCache
-  --  , fetchBreedImagesWithCache
   -- For testing only
   , CacheResult(..)
   , fetchWithCache'
-  --  , fetchDogBreedsWithCache'
-  --  , fetchBreedImagesWithCache'
   ) where
 
 import Prelude
-import BreedData (Breed, BreedData(..), BreedFamily)
-import DogsApi (fetchDogBreeds, fetchBreedImages)
 import Data.Either (Either(..))
-import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref)
@@ -36,6 +28,10 @@ data Cache a
 data CacheResult a
   = Hit a
   | Miss a
+
+instance showCacheResult :: Show a => Show (CacheResult a) where
+  show (Hit a) = "(Hit " <> show a <> ")"
+  show (Miss a) = "(Miss " <> show a <> ")"
 
 getCacheResultValue :: forall a. CacheResult a -> a
 getCacheResultValue (Hit a) = a
