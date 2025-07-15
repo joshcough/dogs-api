@@ -36,9 +36,9 @@ fetchWithCache' ::
   forall m a b.
   MonadAff m =>
   MonadError Error m =>
-  Lens' a (Maybe b) -- lens to the cached value ->
-  m b -- fetch action ->
-  Ref a -- cache ref ->
+  Lens' a (Maybe b) -> -- lens to the cached value
+  m b -> -- fetch action
+  Ref a -> -- cache ref
   m (CacheResult b)
 fetchWithCache' lens fetchAction cacheRef = do
   cache <- liftEffect $ Ref.read cacheRef

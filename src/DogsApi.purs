@@ -17,7 +17,7 @@ import Data.Tuple (Tuple(..))
 import BreedData (Breed(..), BreedFamily)
 import Effect.Aff (Error, error)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Foreign.Generic (class Decode, class Encode, Options, decodeJSON, defaultOptions, genericDecode, genericEncode)
+import Foreign.Generic (class Decode, Options, decodeJSON, defaultOptions, genericDecode)
 import Foreign.Object (Object)
 import Foreign.Object as Object
 
@@ -28,10 +28,6 @@ myOptions :: Options
 myOptions = defaultOptions { unwrapSingleConstructors = true }
 
 derive instance genericBreeds :: Generic Breeds _
-
-instance encodeBreeds :: Encode Breeds where
-  encode = genericEncode myOptions
-
 instance decodeBreeds :: Decode Breeds where
   decode = genericDecode myOptions
 
@@ -39,10 +35,6 @@ newtype Images
   = Images { message :: Array String }
 
 derive instance genericImages :: Generic Images _
-
-instance encodeImages :: Encode Images where
-  encode = genericEncode myOptions
-
 instance decodeImages :: Decode Images where
   decode = genericDecode myOptions
 
