@@ -4,12 +4,15 @@ module Components.BreedList
   ) where
 
 import Prelude
-import BreedData (BreedFamily)
-import HasDogBreeds (class HasDogBreeds, getDogBreeds)
+
+import Control.Monad.Error.Class (try)
 import Data.Array (length)
 import Data.Const (Const)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import BreedData (BreedFamily)
+import HasDogBreeds (class HasDogBreeds, getDogBreeds)
+import Effect.Aff (Error, message)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 import Halogen as H
@@ -18,8 +21,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 
 -- | Component output type
-data Output
-  = BreedSelected String
+data Output = BreedSelected String
 
 -- | Component action type
 data Action
@@ -27,22 +29,20 @@ data Action
   | HandleBreedClick String
 
 -- | Component state
-type State a
-  = { isLoading :: Boolean
-    , error :: Maybe String
-    , cache :: a
-    , breedFamilies :: Maybe (Array BreedFamily)
-    }
+type State =
+  { isLoading :: Boolean
+  , error :: Maybe String
+  , breedFamilies :: Maybe (Array BreedFamily)
+  }
 
 -- | Component definition
-component :: forall a i m. MonadEffect m => HasDogBreeds a m => a -> H.Component (Const Void) i Output m
-component cache =
+component :: forall i m. MonadEffect m => HasDogBreeds Error m => H.Component (Const Void) i Output m
+component =
   H.mkComponent
     { initialState:
         \_ ->
           { isLoading: true
           , error: Nothing
-          , cache: cache
           , breedFamilies: Nothing
           }
     , render
@@ -55,13 +55,13 @@ component cache =
     }
 
 -- | Render function
-render :: forall a m. State a -> H.ComponentHTML Action () m
+render :: forall m. State -> H.ComponentHTML Action () m
 render state =
   HH.div_
     [ if state.isLoading then
         HH.p_ [ HH.text "Loading dog breeds..." ]
       else case state.error of
-        Just err -> HH.p_ [ HH.text $ "Error: " <> err ]
+        Just err -> HH.p_ [ HH.text $ "Error: " <> show err ]
         Nothing -> case state.breedFamilies of
           Nothing -> HH.p_ [ HH.text "No breed data available." ]
           Just families ->
@@ -101,16 +101,14 @@ renderBreedItem displayName breedId =
     [ HH.text displayName ]
 
 -- | Action handler
-handleAction :: forall a m. MonadEffect m => HasDogBreeds a m => Action -> H.HalogenM (State a) Action () Output m Unit
+handleAction :: forall m. MonadEffect m => HasDogBreeds Error m => Action -> H.HalogenM State Action () Output m Unit
 handleAction = case _ of
   Initialize -> do
-    state <- H.get
-    H.liftEffect $ log "Initializing breed list component"
-    result <- H.lift $ getDogBreeds state.cache
-    case result of
-      Right bs -> H.modify_ _ { isLoading = false, breedFamilies = Just bs }
-      Left err -> do
-        H.modify_ _ { isLoading = false, error = Just err }
+    result <- H.lift $ try getDogBreeds
+    H.modify_ $ case result of
+      Right breeds -> _ { isLoading = false, breedFamilies = Just breeds }
+      Left err -> _ { isLoading = false, error = Just $ message err }
+        
   HandleBreedClick breedId -> do
     H.liftEffect $ log $ "Breed clicked: " <> breedId
     H.raise $ BreedSelected breedId
