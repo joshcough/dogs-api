@@ -1,61 +1,92 @@
-module Test.Cache
-  ( testFetchDogBreedsWithCache
-  , testFetchBreedImagesWithCache
-  ) where
+module Test.Cache where
 
 import Prelude
-import Cache (CacheResult(..), fetchDogBreedsWithCache', fetchBreedImagesWithCache', initCache)
-import Data.Either (Either(..))
+
+import BreedData (BreedData, BreedFamily)
+import Cache (Cache(..), CacheResult(..), fetchWithCache', initCache)
+import Data.Either (Either(..), isRight)
 import Data.Maybe (Maybe(..))
-import DogsApi (Breed(..))
-import Effect (Effect)
+import Data.Map as Map
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Test.Assert as Assert
+import Effect.Ref as Ref
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (shouldEqual, shouldSatisfy, fail)
 
--- Test for fetching dog breeds
-testFetchDogBreedsWithCache :: Aff Unit
-testFetchDogBreedsWithCache = do
-  log "Testing fetchDogBreedsWithCache'..."
-  cache <- liftEffect $ initCache
-  result1 <- fetchDogBreedsWithCache' cache
-  result2 <- fetchDogBreedsWithCache' cache
-  liftEffect
-    $ do
-        expectMiss result1
-        expectHit result2
-  log "✓ testFetchDogBreedsWithCache test passed"
+spec :: Spec Unit
+spec = describe "Cache Module" do
 
----- Test for fetching breed images
-testFetchBreedImagesWithCache :: Aff Unit
-testFetchBreedImagesWithCache = do
-  log "Testing fetchBreedImagesWithCache'..."
-  cache <- liftEffect $ initCache
-  let
-    frenchBulldog = Breed { name: "bulldog", subBreed: Just "french" }
+  describe "fetchWithCache'" do
+    it "should return a miss on first call and fetch data" do
+      -- Setup cache and test data
+      cacheRef <- liftEffect $ initCache ({ breeds: Nothing, images: Map.empty } :: BreedData)
+      let testBreeds = [
+            { name: "bulldog", subBreeds: [ "french", "english" ] },
+            { name: "shepherd", subBreeds: [ "german", "australian" ] }
+          ] :: Array BreedFamily
 
-    bostonBulldog = Breed { name: "bulldog", subBreed: Just "boston" }
-  result1 <- fetchBreedImagesWithCache' frenchBulldog cache
-  result2 <- fetchBreedImagesWithCache' frenchBulldog cache
-  result3 <- fetchBreedImagesWithCache' bostonBulldog cache
-  liftEffect
-    $ do
-        expectMiss result1
-        expectHit result2
-        expectMiss result3
-  log "✓ testFetchBreedImagesWithCache test passed"
+      -- Define reader and writer functions
+      let readCache (Cache breedData) = breedData.breeds
+          writeCache breeds (Cache breedData) = Cache (breedData { breeds = Just breeds })
+          fetchTestBreeds = pure (Right testBreeds)
 
-expectHit :: forall a. Either String (CacheResult a) -> Effect Unit
-expectHit (Left err) = Assert.assert' err false
+      -- First call should be a miss (not in cache)
+      result1 <- fetchWithCache' readCache writeCache fetchTestBreeds cacheRef
 
-expectHit (Right (Hit _)) = Assert.assert true
+      -- Verify result
+      result1 `shouldSatisfy` isRight
+      case result1 of
+        Right (Miss actual) -> actual `shouldEqual` testBreeds
+        _ -> fail "Expected a cache miss with correct data"
 
-expectHit (Right (Miss _)) = Assert.assert' "Expected a cache hit, but got a miss" false
+    it "should return a hit on second call without fetching again" do
+      -- Setup cache and test data
+      cacheRef <- liftEffect $ initCache ({ breeds: Nothing, images: Map.empty } :: BreedData)
+      let testBreeds = [
+            { name: "bulldog", subBreeds: [ "french", "english" ] },
+            { name: "shepherd", subBreeds: [ "german", "australian" ] }
+          ] :: Array BreedFamily
 
-expectMiss :: forall a. Either String (CacheResult a) -> Effect Unit
-expectMiss (Left err) = Assert.assert' err false
+      -- Define reader and writer functions
+      let readCache (Cache breedData) = breedData.breeds
+          writeCache breeds (Cache breedData) = Cache (breedData { breeds = Just breeds })
+          fetchTestBreeds = pure (Right testBreeds)
 
-expectMiss (Right (Hit _)) = Assert.assert' "Expected a cache miss, but got a hit" false
+      -- First call to prime the cache
+      _ <- fetchWithCache' readCache writeCache fetchTestBreeds cacheRef
 
-expectMiss (Right (Miss _)) = Assert.assert true
+      -- Second call should be a hit (found in cache)
+      result2 <- fetchWithCache' readCache writeCache fetchTestBreeds cacheRef
+
+      -- Verify result
+      result2 `shouldSatisfy` isRight
+      case result2 of
+        Right (Hit actual) -> actual `shouldEqual` testBreeds
+        _ -> fail "Expected a cache hit with correct data"
+
+    it "should handle fetch errors correctly" do
+      -- Setup cache
+      cacheRef <- liftEffect $ initCache ({ breeds: Nothing, images: Map.empty } :: BreedData)
+
+      -- Define reader and writer functions with error
+      let readCache (Cache breedData) = breedData.breeds
+          writeCache breeds (Cache breedData) = Cache (breedData { breeds = Just breeds })
+          fetchWithError = pure (Left "Test error") :: Aff (Either String (Array BreedFamily))
+
+      -- Call should return the error
+      result <- fetchWithCache' readCache writeCache fetchWithError cacheRef
+
+      -- Verify result
+      case result of
+        Left err -> err `shouldEqual` "Test error"
+        _ -> fail "Expected an error result"
+
+  describe "initCache" do
+    it "should initialize a cache with the provided data" do
+      let initialData = { breeds: Nothing, images: Map.empty } :: BreedData
+      cacheRef <- liftEffect $ initCache initialData
+      cache <- liftEffect $ (Ref.read cacheRef)
+
+      -- Verify initial state
+      case cache of
+        Cache data' -> data' `shouldEqual` initialData

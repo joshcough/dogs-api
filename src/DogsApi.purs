@@ -1,17 +1,13 @@
 module DogsApi
-  ( -- Types
-    BreedFamily
-  , Breed(..)
-    -- API Functions
-  , fetchDogBreeds
+  ( fetchDogBreeds
   , fetchBreedImages
   ) where
 
 import Prelude
-
 import Affjax (Error, printError)
 import Affjax.Node as AX
 import Affjax.ResponseFormat as ResponseFormat
+import BreedData (Breed(..), BreedFamily)
 import Data.Argonaut.Core as JSON
 import Data.Bifunctor (lmap)
 import Data.Either (Either)
@@ -22,25 +18,6 @@ import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
 import Foreign.Object as Object
 import JsonEither as JE
-
--- | Type representing a breed family with its sub-breeds
-type BreedFamily =
-  { name :: String
-  , subBreeds :: Array String
-  }
-
--- | Type representing a specific dog breed, optionally with a sub-breed
-newtype Breed =
-  Breed
-    { name :: String
-    , subBreed :: Maybe String
-    }
-
-derive instance Eq Breed
-derive instance Ord Breed
-
-instance Show Breed where
-  show (Breed { name, subBreed }) = "Breed " <> show { name, subBreed }
 
 -- | Fetches all dog breeds with their sub-breeds from the API
 fetchDogBreeds :: Aff (Either String (Array BreedFamily))
@@ -68,9 +45,9 @@ fetchBreedImages (Breed { name, subBreed }) = do
   let
     -- Handle sub-breed path component if present
     subBreedName = maybe "" (\s -> "/" <> s) subBreed
+
     -- Construct API path
     path = "/breed/" <> name <> subBreedName <> "/images"
-
   dogsApiRequest path deserializeBreedImages
   where
   -- Parse the image URLs array from JSON
@@ -89,13 +66,15 @@ dogsApiRequest path handler = do
   pure $ response >>= extractAndParseMessage
   where
   baseUrl = "https://dog.ceo/api"
+
   fullUrl = baseUrl <> path
 
-  requestConfig = AX.defaultRequest
-    { timeout = Just (Milliseconds 10000.0)
-    , url = fullUrl
-    , responseFormat = ResponseFormat.json
-    }
+  requestConfig =
+    AX.defaultRequest
+      { timeout = Just (Milliseconds 10000.0)
+      , url = fullUrl
+      , responseFormat = ResponseFormat.json
+      }
 
   -- Add context to network errors
   prefixNetworkError :: Error -> String

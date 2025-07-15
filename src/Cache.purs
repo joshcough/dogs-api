@@ -1,33 +1,27 @@
 module Cache
   -- Public API
-  ( Cache
+  ( Cache(..)
+  , fetchWithCache
   , getCacheResultValue
   , initCache
-  , fetchDogBreedsWithCache
-  , fetchBreedImagesWithCache
   -- For testing only
   , CacheResult(..)
-  , fetchDogBreedsWithCache'
-  , fetchBreedImagesWithCache'
+  , fetchWithCache'
   ) where
 
 import Prelude
-import DogsApi (BreedFamily, Breed, fetchDogBreeds, fetchBreedImages)
 import Data.Either (Either(..))
-import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
 -- Cache that contains breed families and images for each breed
 -- Constructor is not exported so that the cache cannot be directly manipulated
-type Cache
-  = { breeds :: Maybe (Array BreedFamily)
-    , images :: Map.Map Breed (Array String)
-    }
+data Cache a
+  = Cache a
 
 -- Calls in this module return a CacheResult
 -- This is mainly for testing, and regular clients should use getCacheResultValue
@@ -35,51 +29,43 @@ data CacheResult a
   = Hit a
   | Miss a
 
+instance showCacheResult :: Show a => Show (CacheResult a) where
+  show (Hit a) = "(Hit " <> show a <> ")"
+  show (Miss a) = "(Miss " <> show a <> ")"
+
 getCacheResultValue :: forall a. CacheResult a -> a
 getCacheResultValue (Hit a) = a
 
 getCacheResultValue (Miss a) = a
 
 -- | Initialize an empty cache
-initCache :: Effect (Ref Cache)
-initCache = Ref.new { breeds: Nothing, images: Map.empty }
+initCache :: forall a. a -> Effect (Ref (Cache a))
+initCache a = Ref.new $ Cache a
 
--- | Fetch dog breeds with caching
-fetchDogBreedsWithCache' :: Ref Cache -> Aff (Either String (CacheResult (Array BreedFamily)))
-fetchDogBreedsWithCache' =
-  fetchWithCache
-    (\c -> c.breeds)
-    (\breeds cache -> cache { breeds = Just breeds })
-    fetchDogBreeds
-
--- | A more user friendly version of fetchDogBreedsWithCache' that strips the CacheResult constructor
-fetchDogBreedsWithCache :: Ref Cache -> Aff (Either String (Array BreedFamily))
-fetchDogBreedsWithCache = map (map (map getCacheResultValue)) fetchDogBreedsWithCache'
-
--- Fetch breed images with caching
-fetchBreedImagesWithCache' :: Breed -> Ref Cache -> Aff (Either String (CacheResult (Array String)))
-fetchBreedImagesWithCache' breed =
-  fetchWithCache
-    (\c -> Map.lookup breed c.images)
-    (\images cache -> cache { images = Map.insert breed images cache.images })
-    (fetchBreedImages breed)
-
--- | A more user friendly version of fetchBreedImagesWithCache' that strips the CacheResult constructor
-fetchBreedImagesWithCache :: Breed -> Ref Cache -> Aff (Either String (Array String))
-fetchBreedImagesWithCache breed = map (map (map getCacheResultValue)) (fetchBreedImagesWithCache' breed)
+fetchWithCache ::
+  forall m a b.
+  MonadAff m =>
+  Show a =>
+  (Cache a -> Maybe b) ->
+  (b -> Cache a -> Cache a) ->
+  m (Either String b) ->
+  Ref (Cache a) ->
+  m (Either String b)
+fetchWithCache readCache writeCache fetchNewData cacheRef = map (map getCacheResultValue) (fetchWithCache' readCache writeCache fetchNewData cacheRef)
 
 -- Tries to retrieve a value from the cache
 -- If it is present, simply return it.
 -- Else run the effect to retrieve it, write it into the cache, and then return it.
-fetchWithCache ::
-  forall a.
+fetchWithCache' ::
+  forall m a b.
+  MonadAff m =>
   Show a =>
-  (Cache -> Maybe a) ->
-  (a -> Cache -> Cache) ->
-  Aff (Either String a) ->
-  Ref Cache ->
-  Aff (Either String (CacheResult a))
-fetchWithCache readCache writeCache fetchNewData cacheRef = do
+  (Cache a -> Maybe b) ->
+  (b -> Cache a -> Cache a) ->
+  m (Either String b) ->
+  Ref (Cache a) ->
+  m (Either String (CacheResult b))
+fetchWithCache' readCache writeCache fetchNewData cacheRef = do
   cache <- liftEffect $ Ref.read cacheRef
   case readCache cache of
     -- if the value is already in the cache, just return it
