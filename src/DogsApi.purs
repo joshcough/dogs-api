@@ -17,23 +17,9 @@ import Data.Tuple (Tuple(..))
 import BreedData (Breed(..), BreedFamily)
 import Effect.Aff (Error, error)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Foreign.Generic (class Decode, Options, decodeJSON, defaultOptions, genericDecode)
+import Foreign.Generic (class Decode, decodeJSON, defaultOptions, genericDecode)
 import Foreign.Object (Object)
 import Foreign.Object as Object
-
-newtype Breeds
-  = Breeds { message :: Object (Array String) }
-
-derive instance genericBreeds :: Generic Breeds _
-instance decodeBreeds :: Decode Breeds where
-  decode = genericDecode defaultOptions { unwrapSingleConstructors = true }
-
-newtype Images
-  = Images { message :: Array String }
-
-derive instance genericImages :: Generic Images _
-instance decodeImages :: Decode Images where
-  decode = genericDecode defaultOptions { unwrapSingleConstructors = true }
 
 -- | Fetches all dog breeds with their sub-breeds from the API
 fetchDogBreeds :: forall m. MonadAff m => MonadError Error m => m (Array BreedFamily)
@@ -72,3 +58,19 @@ dogsApiRequest path = do
       , url = fullUrl
       , responseFormat = ResponseFormat.string
       }
+
+-- Private data used for deserialization
+
+newtype Breeds
+  = Breeds { message :: Object (Array String) }
+
+derive instance genericBreeds :: Generic Breeds _
+instance decodeBreeds :: Decode Breeds where
+  decode = genericDecode defaultOptions { unwrapSingleConstructors = true }
+
+newtype Images
+  = Images { message :: Array String }
+
+derive instance genericImages :: Generic Images _
+instance decodeImages :: Decode Images where
+  decode = genericDecode defaultOptions { unwrapSingleConstructors = true }

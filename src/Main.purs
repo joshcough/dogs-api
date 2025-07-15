@@ -14,11 +14,9 @@ import Halogen.VDom.Driver (runUI)
 main :: Effect Unit
 main = do
   HA.runHalogenAff do
-    body <- HA.awaitBody
     cacheRef <- liftEffect $ new emptyBreedData
+    body <- HA.awaitBody
     let
-      c = BreedApp.component :: _ AppM
-    let
-      component = H.hoist (runAppM cacheRef) c
+      component = H.hoist (runAppM cacheRef) (BreedApp.component :: _ AppM)
     _ <- runUI component unit body
     pure unit
