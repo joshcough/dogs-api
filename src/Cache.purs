@@ -29,7 +29,6 @@ instance showCacheResult :: Show a => Show (CacheResult a) where
 
 getCacheResultValue :: forall a. CacheResult a -> a
 getCacheResultValue (Hit a) = a
-
 getCacheResultValue (Miss a) = a
 
 fetchWithCache ::

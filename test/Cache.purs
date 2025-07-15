@@ -18,8 +18,7 @@ spec =
       testBreeds =
         [ { name: "bulldog", subBreeds: [ "french", "english" ] }
         , { name: "shepherd", subBreeds: [ "german", "australian" ] }
-        ] ::
-          Array BreedFamily
+        ] :: Array BreedFamily
     describe "fetchWithCache'" do
       it "should return a miss on first call and fetch data" do
         cacheRef <- liftEffect $ Ref.new emptyBreedData

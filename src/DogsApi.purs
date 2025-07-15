@@ -26,7 +26,6 @@ fetchDogBreeds :: forall m. MonadAff m => MonadError Error m => m (Array BreedFa
 fetchDogBreeds = toBreedFamilies <$> dogsApiRequest "/breeds/list/all"
   where
   toBreedFamilies (Breeds r) = toBreedFamily <$> Object.toUnfoldable r.message
-
   toBreedFamily (Tuple name subBreeds) = { name, subBreeds }
 
 fetchBreedImages :: forall m. MonadAff m => MonadError Error m => Breed -> m (Array String)
@@ -34,7 +33,6 @@ fetchBreedImages (Breed { name, subBreed }) = do
   let
     -- Handle sub-breed path component if present
     subBreedName = maybe "" (\s -> "/" <> s) subBreed
-
     -- Construct API path
     path = "/breed/" <> name <> subBreedName <> "/images"
   (\(Images r) -> r.message) <$> dogsApiRequest path
@@ -49,9 +47,7 @@ dogsApiRequest path = do
       Right result -> pure result
   where
   baseUrl = "https://dog.ceo/api"
-
   fullUrl = baseUrl <> path
-
   requestConfig =
     AX.defaultRequest
       { timeout = Just (Milliseconds 10000.0)
@@ -60,16 +56,13 @@ dogsApiRequest path = do
       }
 
 -- Private data used for deserialization
-
-newtype Breeds
-  = Breeds { message :: Object (Array String) }
+newtype Breeds = Breeds { message :: Object (Array String) }
 
 derive instance genericBreeds :: Generic Breeds _
 instance decodeBreeds :: Decode Breeds where
   decode = genericDecode defaultOptions { unwrapSingleConstructors = true }
 
-newtype Images
-  = Images { message :: Array String }
+newtype Images = Images { message :: Array String }
 
 derive instance genericImages :: Generic Images _
 instance decodeImages :: Decode Images where

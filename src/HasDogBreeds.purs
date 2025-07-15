@@ -14,8 +14,7 @@ import Cache (fetchWithCache)
 import DogsApi (fetchDogBreeds, fetchBreedImages)
 import Effect.Aff (Error)
 
-class
-  (Monad m, MonadError e m) <= HasDogBreeds e m | m -> e where
+class (Monad m, MonadError e m) <= HasDogBreeds e m | m -> e where
   getDogBreeds :: m (Array BreedFamily)
   getBreedImages :: Breed -> m (Array String)
 

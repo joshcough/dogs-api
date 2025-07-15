@@ -1,7 +1,7 @@
 module Main (main) where
 
 import Prelude
-import AppM (AppM, runAppM)
+import AppM (runAppM)
 import BreedData (emptyBreedData)
 import Components.BreedApp as BreedApp
 import Effect (Effect)
@@ -17,6 +17,6 @@ main = do
     cacheRef <- liftEffect $ new emptyBreedData
     body <- HA.awaitBody
     let
-      component = H.hoist (runAppM cacheRef) (BreedApp.component :: _ AppM)
+      component = H.hoist (runAppM cacheRef) (BreedApp.component)
     _ <- runUI component unit body
     pure unit

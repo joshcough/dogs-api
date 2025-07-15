@@ -56,10 +56,8 @@ prevPage state = state { currentPage = max 0 (state.currentPage - 1) }
 -- Move to the next page
 nextPage :: PaginationState -> PaginationState
 nextPage state =
-  let
-    maxPage = totalPages state - 1
-  in
-    state { currentPage = min maxPage (state.currentPage + 1) }
+  let maxPage = totalPages state - 1
+  in state { currentPage = min maxPage (state.currentPage + 1) }
 
 -- Get the items for the current page
 getPageItems :: forall a. PaginationState -> Array a -> Array a
