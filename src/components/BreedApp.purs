@@ -1,7 +1,6 @@
 module Components.BreedApp (component) where
 
 import Prelude
-
 import Data.Const (Const)
 import Data.Maybe (maybe)
 import Data.String (Pattern(..), indexOf, take, drop)
@@ -17,7 +16,8 @@ import Halogen.HTML as HH
 import Type.Proxy (Proxy(..))
 
 -- | Component state
-type State = { currentView :: View }
+type State
+  = { currentView :: View }
 
 -- | View state enum - matches the original AppState
 data View
@@ -30,17 +30,17 @@ data Action
   | BackToBreedList
 
 -- | Child component slots
-type Slots =
-  ( breedList :: H.Slot (Const Void) BreedList.Output Unit
-  , breedDetails :: H.Slot (Const Void) BreedDetails.Output Unit
-  )
+type Slots
+  = ( breedList :: H.Slot (Const Void) BreedList.Output Unit
+    , breedDetails :: H.Slot (Const Void) BreedDetails.Output Unit
+    )
 
 -- | Component definition
-component
-  :: forall q i o m
-   . MonadEffect m
-  => HasDogBreeds Error m
-  => H.Component q i o m
+component ::
+  forall q i o m.
+  MonadEffect m =>
+  HasDogBreeds Error m =>
+  H.Component q i o m
 component =
   H.mkComponent
     { initialState: \_ -> { currentView: BreedListState }
@@ -54,12 +54,12 @@ _breedList = Proxy :: Proxy "breedList"
 _breedDetails = Proxy :: Proxy "breedDetails"
 
 -- | Render function
-render
-  :: forall m
-   . MonadEffect m
-  => HasDogBreeds Error m
-  => State
-  -> H.ComponentHTML Action Slots m
+render ::
+  forall m.
+  MonadEffect m =>
+  HasDogBreeds Error m =>
+  State ->
+  H.ComponentHTML Action Slots m
 render state =
   HH.div_
     [ HH.h1_ [ HH.text "Dog Breeds Explorer" ]
@@ -67,17 +67,15 @@ render state =
     ]
 
 -- | Render the appropriate content based on state
-renderContent
-  :: forall m
-   . MonadEffect m
-  => HasDogBreeds Error m
-  => State
-  -> H.ComponentHTML Action Slots m
+renderContent ::
+  forall m.
+  MonadEffect m =>
+  HasDogBreeds Error m =>
+  State ->
+  H.ComponentHTML Action Slots m
 renderContent state = case state.currentView of
-  BreedListState ->
-    HH.slot _breedList unit BreedList.component unit handleBreedList
-  BreedDetailsState breed ->
-    HH.slot _breedDetails unit (BreedDetails.component breed) unit handleBreedDetails
+  BreedListState -> HH.slot _breedList unit BreedList.component unit handleBreedList
+  BreedDetailsState breed -> HH.slot _breedDetails unit (BreedDetails.component breed) unit handleBreedDetails
 
 -- | Handle events from BreedList.purs component
 handleBreedList :: BreedList.Output -> Action
@@ -88,12 +86,12 @@ handleBreedDetails :: BreedDetails.Output -> Action
 handleBreedDetails BreedDetails.BackClicked = BackToBreedList
 
 -- | Action handler
-handleAction
-  :: forall m o
-   . MonadEffect m
-  => HasDogBreeds Error m
-  => Action
-  -> H.HalogenM State Action Slots o m Unit
+handleAction ::
+  forall m o.
+  MonadEffect m =>
+  HasDogBreeds Error m =>
+  Action ->
+  H.HalogenM State Action Slots o m Unit
 handleAction = case _ of
   SelectBreed breedStr -> do
     H.liftEffect $ log $ "Selected breed: " <> breedStr

@@ -15,11 +15,11 @@ import Prelude
 import Data.Array (slice)
 import Data.Int (ceil, toNumber)
 
-type PaginationState =
-  { currentPage :: Int
-  , itemsPerPage :: Int
-  , totalItems :: Int
-  }
+type PaginationState
+  = { currentPage :: Int
+    , itemsPerPage :: Int
+    , totalItems :: Int
+    }
 
 -- Initialize pagination state
 initPaginationState :: Int -> Int -> PaginationState

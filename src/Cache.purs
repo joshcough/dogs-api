@@ -8,7 +8,6 @@ module Cache
   ) where
 
 import Prelude
-
 import Control.Monad.Error.Class (class MonadError)
 import Data.Lens (Lens', set, view)
 import Data.Maybe (Maybe(..))
@@ -30,16 +29,17 @@ instance showCacheResult :: Show a => Show (CacheResult a) where
 
 getCacheResultValue :: forall a. CacheResult a -> a
 getCacheResultValue (Hit a) = a
+
 getCacheResultValue (Miss a) = a
 
-fetchWithCache'
-  :: forall m a b
-   . MonadAff m
-  => MonadError Error m
-  => Lens' a (Maybe b)  -- lens to the cached value
-  -> m b                -- fetch action
-  -> Ref a              -- cache ref
-  -> m (CacheResult b)
+fetchWithCache' ::
+  forall m a b.
+  MonadAff m =>
+  MonadError Error m =>
+  Lens' a (Maybe b) -- lens to the cached value ->
+  m b -- fetch action ->
+  Ref a -- cache ref ->
+  m (CacheResult b)
 fetchWithCache' lens fetchAction cacheRef = do
   cache <- liftEffect $ Ref.read cacheRef
   case view lens cache of
@@ -49,13 +49,12 @@ fetchWithCache' lens fetchAction cacheRef = do
       liftEffect $ Ref.modify_ (set lens (Just result)) cacheRef
       pure (Miss result)
 
-fetchWithCache
-  :: forall m a b
-   . MonadAff m
-  => MonadError Error m
-  => Lens' a (Maybe b)
-  -> m b
-  -> Ref a
-  -> m b
-fetchWithCache lens fetchAction cacheRef =
-  map getCacheResultValue (fetchWithCache' lens fetchAction cacheRef)
+fetchWithCache ::
+  forall m a b.
+  MonadAff m =>
+  MonadError Error m =>
+  Lens' a (Maybe b) ->
+  m b ->
+  Ref a ->
+  m b
+fetchWithCache lens fetchAction cacheRef = map getCacheResultValue (fetchWithCache' lens fetchAction cacheRef)

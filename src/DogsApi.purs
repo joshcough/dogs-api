@@ -4,7 +4,6 @@ module DogsApi
   ) where
 
 import Prelude
-
 import Affjax (printError)
 import Affjax.Node as AX
 import Affjax.ResponseFormat as ResponseFormat
@@ -22,23 +21,27 @@ import Foreign.Generic (class Decode, class Encode, Options, decodeJSON, default
 import Foreign.Object (Object)
 import Foreign.Object as Object
 
-newtype Breeds = Breeds { message :: Object (Array String) }
+newtype Breeds
+  = Breeds { message :: Object (Array String) }
 
 myOptions :: Options
 myOptions = defaultOptions { unwrapSingleConstructors = true }
 
 derive instance genericBreeds :: Generic Breeds _
+
 instance encodeBreeds :: Encode Breeds where
   encode = genericEncode myOptions
 
 instance decodeBreeds :: Decode Breeds where
   decode = genericDecode myOptions
 
-newtype Images = Images { message :: Array String }
+newtype Images
+  = Images { message :: Array String }
 
 derive instance genericImages :: Generic Images _
+
 instance encodeImages :: Encode Images where
-  encode = genericEncode myOptions 
+  encode = genericEncode myOptions
 
 instance decodeImages :: Decode Images where
   decode = genericDecode myOptions
@@ -48,6 +51,7 @@ fetchDogBreeds :: forall m. MonadAff m => MonadError Error m => m (Array BreedFa
 fetchDogBreeds = toBreedFamilies <$> dogsApiRequest "/breeds/list/all"
   where
   toBreedFamilies (Breeds r) = toBreedFamily <$> Object.toUnfoldable r.message
+
   toBreedFamily (Tuple name subBreeds) = { name, subBreeds }
 
 fetchBreedImages :: forall m. MonadAff m => MonadError Error m => Breed -> m (Array String)
@@ -55,6 +59,7 @@ fetchBreedImages (Breed { name, subBreed }) = do
   let
     -- Handle sub-breed path component if present
     subBreedName = maybe "" (\s -> "/" <> s) subBreed
+
     -- Construct API path
     path = "/breed/" <> name <> subBreedName <> "/images"
   (\(Images r) -> r.message) <$> dogsApiRequest path

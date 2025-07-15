@@ -4,7 +4,6 @@ module Components.BreedList
   ) where
 
 import Prelude
-
 import Control.Monad.Error.Class (try)
 import Data.Array (length)
 import Data.Const (Const)
@@ -21,7 +20,8 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 
 -- | Component output type
-data Output = BreedSelected String
+data Output
+  = BreedSelected String
 
 -- | Component action type
 data Action
@@ -29,11 +29,11 @@ data Action
   | HandleBreedClick String
 
 -- | Component state
-type State =
-  { isLoading :: Boolean
-  , error :: Maybe String
-  , breedFamilies :: Maybe (Array BreedFamily)
-  }
+type State
+  = { isLoading :: Boolean
+    , error :: Maybe String
+    , breedFamilies :: Maybe (Array BreedFamily)
+    }
 
 -- | Component definition
 component :: forall i m. MonadEffect m => HasDogBreeds Error m => H.Component (Const Void) i Output m
@@ -105,10 +105,10 @@ handleAction :: forall m. MonadEffect m => HasDogBreeds Error m => Action -> H.H
 handleAction = case _ of
   Initialize -> do
     result <- H.lift $ try getDogBreeds
-    H.modify_ $ case result of
-      Right breeds -> _ { isLoading = false, breedFamilies = Just breeds }
-      Left err -> _ { isLoading = false, error = Just $ message err }
-        
+    H.modify_
+      $ case result of
+          Right breeds -> _ { isLoading = false, breedFamilies = Just breeds }
+          Left err -> _ { isLoading = false, error = Just $ message err }
   HandleBreedClick breedId -> do
     H.liftEffect $ log $ "Breed clicked: " <> breedId
     H.raise $ BreedSelected breedId

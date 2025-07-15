@@ -4,7 +4,6 @@ module Components.BreedDetails
   ) where
 
 import Prelude
-
 import Control.Monad.Error.Class (try)
 import Data.Array (length)
 import Data.Const (Const)
@@ -22,7 +21,8 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 
 -- | Component output message
-data Output = BackClicked
+data Output
+  = BackClicked
 
 -- | Component action types
 data Action
@@ -32,20 +32,20 @@ data Action
   | PreviousPage
 
 -- | Component state
-type State =
-  { breed :: Breed
-  , images :: Array String
-  , pagination :: PS.PaginationState
-  , isLoading :: Boolean
-  , error :: Maybe String
-  }
+type State
+  = { breed :: Breed
+    , images :: Array String
+    , pagination :: PS.PaginationState
+    , isLoading :: Boolean
+    , error :: Maybe String
+    }
 
-component
-  :: forall i m
-   . MonadEffect m
-  => HasDogBreeds Error m
-  => Breed
-  -> H.Component (Const Void) i Output m
+component ::
+  forall i m.
+  MonadEffect m =>
+  HasDogBreeds Error m =>
+  Breed ->
+  H.Component (Const Void) i Output m
 component breed =
   H.mkComponent
     { initialState:
@@ -99,9 +99,9 @@ renderPagination state =
     , HH.span_
         [ HH.text
             $ "Page "
-                <> show (state.pagination.currentPage + 1)
-                <> " of "
-                <> show (PS.totalPages state.pagination)
+            <> show (state.pagination.currentPage + 1)
+            <> " of "
+            <> show (PS.totalPages state.pagination)
         ]
     , HH.button
         [ HP.disabled (PS.isNextDisabled state.pagination)
@@ -124,12 +124,12 @@ renderImages images =
     )
 
 -- | Action handler
-handleAction
-  :: forall m
-   . HasDogBreeds Error m
-  => MonadEffect m
-  => Action
-  -> H.HalogenM State Action () Output m Unit
+handleAction ::
+  forall m.
+  HasDogBreeds Error m =>
+  MonadEffect m =>
+  Action ->
+  H.HalogenM State Action () Output m Unit
 handleAction = case _ of
   Initialize -> do
     state <- H.get

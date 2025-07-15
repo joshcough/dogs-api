@@ -1,7 +1,6 @@
 module Main (main) where
 
 import Prelude
-
 import AppM (AppM, runAppM)
 import BreedData (emptyBreedData)
 import Components.BreedApp as BreedApp
@@ -17,7 +16,9 @@ main = do
   HA.runHalogenAff do
     body <- HA.awaitBody
     cacheRef <- liftEffect $ new emptyBreedData
-    let c = BreedApp.component :: _ AppM
-    let component = H.hoist (runAppM cacheRef) c
+    let
+      c = BreedApp.component :: _ AppM
+    let
+      component = H.hoist (runAppM cacheRef) c
     _ <- runUI component unit body
     pure unit

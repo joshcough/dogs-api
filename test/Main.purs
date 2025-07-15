@@ -9,6 +9,7 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner.Node (runSpecAndExitProcess)
 
 main :: Effect Unit
-main = launchAff_ do
-  specs <- discover "Test\\..*"
-  liftEffect $ runSpecAndExitProcess [consoleReporter] specs
+main =
+  launchAff_ do
+    specs <- discover "Test\\..*"
+    liftEffect $ runSpecAndExitProcess [ consoleReporter ] specs
