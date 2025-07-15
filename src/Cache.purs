@@ -32,6 +32,16 @@ getCacheResultValue (Hit a) = a
 
 getCacheResultValue (Miss a) = a
 
+fetchWithCache ::
+  forall m a b.
+  MonadAff m =>
+  MonadError Error m =>
+  Lens' a (Maybe b) ->
+  m b ->
+  Ref a ->
+  m b
+fetchWithCache lens fetchAction cacheRef = map getCacheResultValue (fetchWithCache' lens fetchAction cacheRef)
+
 fetchWithCache' ::
   forall m a b.
   MonadAff m =>
@@ -48,13 +58,3 @@ fetchWithCache' lens fetchAction cacheRef = do
       result <- fetchAction
       liftEffect $ Ref.modify_ (set lens (Just result)) cacheRef
       pure (Miss result)
-
-fetchWithCache ::
-  forall m a b.
-  MonadAff m =>
-  MonadError Error m =>
-  Lens' a (Maybe b) ->
-  m b ->
-  Ref a ->
-  m b
-fetchWithCache lens fetchAction cacheRef = map getCacheResultValue (fetchWithCache' lens fetchAction cacheRef)

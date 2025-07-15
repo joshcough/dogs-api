@@ -24,19 +24,16 @@ import Foreign.Object as Object
 newtype Breeds
   = Breeds { message :: Object (Array String) }
 
-myOptions :: Options
-myOptions = defaultOptions { unwrapSingleConstructors = true }
-
 derive instance genericBreeds :: Generic Breeds _
 instance decodeBreeds :: Decode Breeds where
-  decode = genericDecode myOptions
+  decode = genericDecode defaultOptions { unwrapSingleConstructors = true }
 
 newtype Images
   = Images { message :: Array String }
 
 derive instance genericImages :: Generic Images _
 instance decodeImages :: Decode Images where
-  decode = genericDecode myOptions
+  decode = genericDecode defaultOptions { unwrapSingleConstructors = true }
 
 -- | Fetches all dog breeds with their sub-breeds from the API
 fetchDogBreeds :: forall m. MonadAff m => MonadError Error m => m (Array BreedFamily)
